@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ai.action.proposed",
+  "description": "Emitted when an AI agent proposes one or more actions for a trip",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": ["trip_id", "proposal_id", "agent_type", "actions", "grounding", "reasoning", "requires_approval", "urgency"],
+      "properties": {
+        "trip_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Trip the proposal relates to"
+        },
+        "proposal_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for this proposal"
+        },
+        "agent_type": {
+          "type": "string",
+          "enum": [
+            "orchestrator",
+            "dining",
+            "stay",
+            "experience",
+            "flight",
+            "budget",
+            "trust",
+            "support"
+          ],
+          "description": "Type of AI agent that generated the proposal"
+        },
+        "actions": {
+          "type": "array",
+          "description": "Ordered list of proposed actions",
+          "items": {
+            "type": "object",
+            "required": ["type", "target_id", "params"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "move_reservation",
+                  "cancel_reservation",
+                  "add_item",
+                  "modify_reservation",
+                  "rebook_flight",
+                  "file_claim",
+                  "send_message"
+                ],
+                "description": "Type of proposed action"
+              },
+              "target_id": {
+                "type": "string",
+                "description": "Identifier of the target entity for the action"
+              },
+              "params": {
+                "type": "object",
+                "description": "Action-specific parameters"
+              }
+            }
+          }
+        },
+        "grounding": {
+          "type": "array",
+          "description": "Evidence and data that informed the proposal",
+          "items": {
+            "type": "object",
+            "required": ["entity_id", "evidence_type", "ref", "confidence"],
+            "properties": {
+              "entity_id": {
+                "type": "string",
+                "description": "Entity the evidence relates to"
+              },
+              "evidence_type": {
+                "type": "string",
+                "enum": [
+                  "inventory_check",
+                  "policy_check",
+                  "trust_signal",
+                  "review_data",
+                  "disruption_data"
+                ],
+                "description": "Category of evidence"
+              },
+              "ref": {
+                "type": "string",
+                "description": "Reference to the source data"
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Confidence in this piece of evidence (0-1)"
+              }
+            }
+          }
+        },
+        "reasoning": {
+          "type": "string",
+          "description": "Human-readable explanation of why these actions are proposed"
+        },
+        "requires_approval": {
+          "type": "boolean",
+          "description": "Whether user approval is required before execution"
+        },
+        "urgency": {
+          "type": "string",
+          "enum": ["low", "normal", "high", "critical"],
+          "description": "How urgently the actions should be executed"
+        }
+      }
+    }
+  }
+}

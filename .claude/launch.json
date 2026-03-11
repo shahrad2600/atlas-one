@@ -1,0 +1,113 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/web", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/admin", "dev"],
+      "port": 3001
+    },
+    {
+      "name": "concierge",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/concierge", "dev"],
+      "port": 3002
+    },
+    {
+      "name": "identity-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/identity-service", "dev"],
+      "port": 4001
+    },
+    {
+      "name": "travel-graph-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/travel-graph-service", "dev"],
+      "port": 4002
+    },
+    {
+      "name": "search-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/search-service", "dev"],
+      "port": 4003
+    },
+    {
+      "name": "trip-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/trip-service", "dev"],
+      "port": 4004
+    },
+    {
+      "name": "commerce-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/commerce-service", "dev"],
+      "port": 4005
+    },
+    {
+      "name": "dining-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/dining-service", "dev"],
+      "port": 4006
+    },
+    {
+      "name": "experiences-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/experiences-service", "dev"],
+      "port": 4007
+    },
+    {
+      "name": "stay-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/stay-service", "dev"],
+      "port": 4008
+    },
+    {
+      "name": "flight-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/flight-service", "dev"],
+      "port": 4009
+    },
+    {
+      "name": "insurance-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/insurance-service", "dev"],
+      "port": 4010
+    },
+    {
+      "name": "finance-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/finance-service", "dev"],
+      "port": 4011
+    },
+    {
+      "name": "luxury-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/luxury-service", "dev"],
+      "port": 4012
+    },
+    {
+      "name": "messaging-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/messaging-service", "dev"],
+      "port": 4013
+    },
+    {
+      "name": "trust-service",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/trust-service", "dev"],
+      "port": 4014
+    },
+    {
+      "name": "ai-orchestrator",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@atlas/ai-orchestrator", "dev"],
+      "port": 4015
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "tg.entity.upserted",
+  "description": "Emitted when a Travel Graph entity is created or updated",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": ["entity_id", "entity_type", "action"],
+      "properties": {
+        "entity_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier of the entity"
+        },
+        "entity_type": {
+          "type": "string",
+          "enum": [
+            "place",
+            "venue",
+            "supplier",
+            "product",
+            "inventory_slot",
+            "brand",
+            "category",
+            "tag",
+            "event",
+            "transport_node",
+            "aircraft",
+            "route",
+            "policy",
+            "media"
+          ],
+          "description": "Type of the Travel Graph entity"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["created", "updated"],
+          "description": "Whether the entity was created or updated"
+        },
+        "changes": {
+          "type": "object",
+          "description": "Map of field -> {from, to} for tracking what changed"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["internal", "partner", "ugc", "import", "editorial"],
+          "description": "Origin source of the entity data"
+        }
+      }
+    }
+  }
+}

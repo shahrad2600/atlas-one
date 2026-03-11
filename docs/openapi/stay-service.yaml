@@ -1,0 +1,2159 @@
+openapi: 3.1.0
+info:
+  title: Atlas One - Stays & Rentals Service API
+  description: |
+    Manages property listings, room inventory, rate plans, availability search,
+    reservations, mutual reviews, damage claims, host-guest messaging, and
+    AI-powered property intelligence scoring for the Atlas One platform.
+  version: 1.0.0
+  contact:
+    name: Atlas One API Support
+    email: api-support@atlasone.com
+
+servers:
+  - url: https://api.atlasone.com/v1/stays
+    description: Production
+  - url: https://api.staging.atlasone.com/v1/stays
+    description: Staging
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Properties
+    description: Property listing management (partner/host)
+  - name: Rooms
+    description: Room type management within properties
+  - name: Rate Plans
+    description: Rate plan configuration
+  - name: Inventory
+    description: Availability and pricing calendar
+  - name: Hosts
+    description: Host profile management
+  - name: Search
+    description: Consumer-facing availability search
+  - name: Reservations
+    description: Stay booking and lifecycle
+  - name: Reviews
+    description: Mutual guest/host review system
+  - name: Damage Claims
+    description: Post-stay damage claim workflow
+  - name: Messaging
+    description: Host-guest communication
+  - name: Intelligence
+    description: AI property intelligence scores
+
+paths:
+  # ── Property Management ────────────────────────────────────────────────
+  /properties:
+    post:
+      operationId: createProperty
+      tags: [Properties]
+      summary: Create property listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePropertyRequest'
+      responses:
+        '201':
+          description: Property created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    get:
+      operationId: listProperties
+      tags: [Properties]
+      summary: List properties
+      parameters:
+        - name: property_type
+          in: query
+          schema:
+            $ref: '#/components/schemas/PropertyType'
+        - name: place_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: supplier_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paginated property list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Property'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /properties/{propertyId}:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+
+    get:
+      operationId: getProperty
+      tags: [Properties]
+      summary: Get property with rooms, rates, and intelligence
+      responses:
+        '200':
+          description: Full property detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      operationId: updateProperty
+      tags: [Properties]
+      summary: Update property
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePropertyRequest'
+      responses:
+        '200':
+          description: Property updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: deactivateProperty
+      tags: [Properties]
+      summary: Deactivate property listing
+      responses:
+        '204':
+          description: Property deactivated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Room Types ─────────────────────────────────────────────────────────
+  /properties/{propertyId}/rooms:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+
+    post:
+      operationId: addRoomType
+      tags: [Rooms]
+      summary: Add room type to property
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomTypeRequest'
+      responses:
+        '201':
+          description: Room type created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    get:
+      operationId: listRoomTypes
+      tags: [Rooms]
+      summary: List room types for a property
+      responses:
+        '200':
+          description: Room type list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RoomType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /properties/{propertyId}/rooms/{roomTypeId}:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+      - $ref: '#/components/parameters/RoomTypeId'
+
+    patch:
+      operationId: updateRoomType
+      tags: [Rooms]
+      summary: Update room type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoomTypeRequest'
+      responses:
+        '200':
+          description: Room type updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  # ── Rate Plans ─────────────────────────────────────────────────────────
+  /properties/{propertyId}/rate-plans:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+
+    post:
+      operationId: createRatePlan
+      tags: [Rate Plans]
+      summary: Create rate plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRatePlanRequest'
+      responses:
+        '201':
+          description: Rate plan created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatePlan'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    get:
+      operationId: listRatePlans
+      tags: [Rate Plans]
+      summary: List rate plans for a property
+      responses:
+        '200':
+          description: Rate plan list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RatePlan'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Inventory ──────────────────────────────────────────────────────────
+  /properties/{propertyId}/inventory:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+
+    put:
+      operationId: bulkUpdateInventory
+      tags: [Inventory]
+      summary: Bulk update inventory calendar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [updates]
+              properties:
+                updates:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/InventoryUpdate'
+                  minItems: 1
+                  maxItems: 365
+      responses:
+        '200':
+          description: Inventory updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated_count:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    get:
+      operationId: getInventoryCalendar
+      tags: [Inventory]
+      summary: Get inventory calendar
+      parameters:
+        - name: date_from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Inventory calendar
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InventoryNight'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Host Profile ───────────────────────────────────────────────────────
+  /hosts/{hostId}:
+    parameters:
+      - name: hostId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      operationId: getHostProfile
+      tags: [Hosts]
+      summary: Get host profile with scores
+      responses:
+        '200':
+          description: Host profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      operationId: updateHostProfile
+      tags: [Hosts]
+      summary: Update host profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateHostProfileRequest'
+      responses:
+        '200':
+          description: Host profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Consumer Search ────────────────────────────────────────────────────
+  /search/stays:
+    get:
+      operationId: searchStays
+      tags: [Search]
+      summary: Search stay availability
+      parameters:
+        - name: place_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: check_in
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: check_out
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: guests
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: property_type
+          in: query
+          schema:
+            $ref: '#/components/schemas/PropertyType'
+        - name: price_min
+          in: query
+          schema:
+            type: number
+            format: double
+            minimum: 0
+        - name: price_max
+          in: query
+          schema:
+            type: number
+            format: double
+            minimum: 0
+        - name: amenities
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+        - name: instant_book
+          in: query
+          schema:
+            type: boolean
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StaySearchResult'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── Reservations ───────────────────────────────────────────────────────
+  /reservations:
+    post:
+      operationId: bookStay
+      tags: [Reservations]
+      summary: Book a stay
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReservationRequest'
+      responses:
+        '201':
+          description: Reservation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Dates no longer available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /reservations/{reservationId}:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+
+    get:
+      operationId: getReservation
+      tags: [Reservations]
+      summary: Get stay reservation
+      responses:
+        '200':
+          description: Reservation detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /reservations/{reservationId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+
+    post:
+      operationId: cancelReservation
+      tags: [Reservations]
+      summary: Cancel stay reservation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '200':
+          description: Reservation cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Reservation cannot be cancelled in current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── Mutual Reviews ────────────────────────────────────────────────────
+  /reservations/{reservationId}/review:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+
+    post:
+      operationId: submitReview
+      tags: [Reviews]
+      summary: Submit review (guest or host)
+      description: |
+        Both guest and host may submit one review per reservation. Reviews
+        remain hidden until both parties have submitted or 14 days have
+        elapsed since checkout, whichever comes first.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewRequest'
+      responses:
+        '201':
+          description: Review submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MutualReview'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Review already submitted by this party
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /reservations/{reservationId}/reviews:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+
+    get:
+      operationId: getReviews
+      tags: [Reviews]
+      summary: Get mutual reviews
+      description: |
+        Returns reviews only after both guest and host have submitted
+        or 14 days have elapsed since checkout.
+      responses:
+        '200':
+          description: Mutual reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guest_review:
+                    $ref: '#/components/schemas/MutualReview'
+                  host_review:
+                    $ref: '#/components/schemas/MutualReview'
+                  visible:
+                    type: boolean
+                    description: Whether reviews are currently visible
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Damage Claims ──────────────────────────────────────────────────────
+  /reservations/{reservationId}/damage-claims:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+
+    post:
+      operationId: fileDamageClaim
+      tags: [Damage Claims]
+      summary: File damage claim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDamageClaimRequest'
+      responses:
+        '201':
+          description: Claim filed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DamageClaim'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /damage-claims/{claimId}:
+    parameters:
+      - name: claimId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      operationId: getDamageClaim
+      tags: [Damage Claims]
+      summary: Get claim status
+      responses:
+        '200':
+          description: Claim detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DamageClaim'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      operationId: updateDamageClaim
+      tags: [Damage Claims]
+      summary: Update claim (resolution)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDamageClaimRequest'
+      responses:
+        '200':
+          description: Claim updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DamageClaim'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Messaging ──────────────────────────────────────────────────────────
+  /properties/{propertyId}/messages:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+
+    post:
+      operationId: sendPropertyMessage
+      tags: [Messaging]
+      summary: Send message about a property
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyMessage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /properties/{propertyId}/messages/threads:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+
+    get:
+      operationId: listPropertyThreads
+      tags: [Messaging]
+      summary: List message threads for a property
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Thread list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PropertyThread'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /properties/{propertyId}/messages/threads/{threadId}:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+      - name: threadId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      operationId: getPropertyThread
+      tags: [Messaging]
+      summary: Get thread with messages
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Thread detail with messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyThreadDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Intelligence ───────────────────────────────────────────────────────
+  /properties/{propertyId}/intelligence:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+
+    get:
+      operationId: getPropertyIntelligence
+      tags: [Intelligence]
+      summary: Get AI property intelligence scores
+      responses:
+        '200':
+          description: Intelligence scores
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyIntelligence'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PropertyId:
+      name: propertyId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    RoomTypeId:
+      name: roomTypeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    ReservationId:
+      name: reservationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableEntity:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # ── Common ───────────────────────────────────────────────────────────
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code
+              examples: ['VALIDATION_ERROR']
+            message:
+              type: string
+              description: Human-readable message
+              examples: ['check_in must be before check_out']
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  reason:
+                    type: string
+
+    Cursor:
+      type: object
+      properties:
+        next:
+          type: string
+          nullable: true
+        prev:
+          type: string
+          nullable: true
+
+    # ── Property Type Enum ───────────────────────────────────────────────
+    PropertyType:
+      type: string
+      enum:
+        - hotel
+        - apartment
+        - house
+        - villa
+        - cabin
+        - hostel
+        - boutique_hotel
+        - resort
+        - bed_and_breakfast
+        - campsite
+
+    # ── Property ─────────────────────────────────────────────────────────
+    Property:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        venue_id:
+          type: string
+          format: uuid
+        supplier_id:
+          type: string
+          format: uuid
+        property_type:
+          $ref: '#/components/schemas/PropertyType'
+        title:
+          type: string
+        description:
+          type: string
+        address:
+          type: object
+          properties:
+            street:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            postal_code:
+              type: string
+            country_code:
+              type: string
+        coordinates:
+          type: object
+          properties:
+            latitude:
+              type: number
+              format: double
+            longitude:
+              type: number
+              format: double
+        check_in_time:
+          type: string
+          format: time
+          examples: ['15:00']
+        check_out_time:
+          type: string
+          format: time
+          examples: ['11:00']
+        max_guests:
+          type: integer
+          minimum: 1
+        bedrooms:
+          type: integer
+          minimum: 0
+        bathrooms:
+          type: number
+          minimum: 0
+        rules:
+          type: object
+          properties:
+            smoking_allowed:
+              type: boolean
+            pets_allowed:
+              type: boolean
+            parties_allowed:
+              type: boolean
+            quiet_hours_start:
+              type: string
+              format: time
+            quiet_hours_end:
+              type: string
+              format: time
+            custom_rules:
+              type: array
+              items:
+                type: string
+        amenities:
+          type: array
+          items:
+            type: string
+          examples: [['wifi', 'pool', 'parking', 'kitchen', 'air_conditioning']]
+        min_nights:
+          type: integer
+          minimum: 1
+          default: 1
+        max_nights:
+          type: integer
+          minimum: 1
+        instant_book:
+          type: boolean
+          default: false
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+              caption:
+                type: string
+              sort_order:
+                type: integer
+        status:
+          type: string
+          enum: [active, inactive, pending_review]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreatePropertyRequest:
+      type: object
+      required:
+        - venue_id
+        - supplier_id
+        - property_type
+        - title
+        - check_in_time
+        - check_out_time
+        - max_guests
+        - bedrooms
+        - bathrooms
+      properties:
+        venue_id:
+          type: string
+          format: uuid
+        supplier_id:
+          type: string
+          format: uuid
+        property_type:
+          $ref: '#/components/schemas/PropertyType'
+        title:
+          type: string
+          minLength: 5
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 5000
+        check_in_time:
+          type: string
+          format: time
+        check_out_time:
+          type: string
+          format: time
+        max_guests:
+          type: integer
+          minimum: 1
+        bedrooms:
+          type: integer
+          minimum: 0
+        bathrooms:
+          type: number
+          minimum: 0
+        rules:
+          type: object
+          properties:
+            smoking_allowed:
+              type: boolean
+            pets_allowed:
+              type: boolean
+            parties_allowed:
+              type: boolean
+            quiet_hours_start:
+              type: string
+              format: time
+            quiet_hours_end:
+              type: string
+              format: time
+            custom_rules:
+              type: array
+              items:
+                type: string
+        amenities:
+          type: array
+          items:
+            type: string
+        min_nights:
+          type: integer
+          minimum: 1
+          default: 1
+        max_nights:
+          type: integer
+          minimum: 1
+        instant_book:
+          type: boolean
+          default: false
+
+    UpdatePropertyRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 5
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 5000
+        check_in_time:
+          type: string
+          format: time
+        check_out_time:
+          type: string
+          format: time
+        max_guests:
+          type: integer
+          minimum: 1
+        bedrooms:
+          type: integer
+          minimum: 0
+        bathrooms:
+          type: number
+          minimum: 0
+        rules:
+          type: object
+          properties:
+            smoking_allowed:
+              type: boolean
+            pets_allowed:
+              type: boolean
+            parties_allowed:
+              type: boolean
+            quiet_hours_start:
+              type: string
+              format: time
+            quiet_hours_end:
+              type: string
+              format: time
+            custom_rules:
+              type: array
+              items:
+                type: string
+        amenities:
+          type: array
+          items:
+            type: string
+        min_nights:
+          type: integer
+          minimum: 1
+        max_nights:
+          type: integer
+          minimum: 1
+        instant_book:
+          type: boolean
+
+    PropertyDetail:
+      allOf:
+        - $ref: '#/components/schemas/Property'
+        - type: object
+          properties:
+            rooms:
+              type: array
+              items:
+                $ref: '#/components/schemas/RoomType'
+            rate_plans:
+              type: array
+              items:
+                $ref: '#/components/schemas/RatePlan'
+            intelligence:
+              $ref: '#/components/schemas/PropertyIntelligence'
+            host:
+              $ref: '#/components/schemas/HostProfile'
+
+    # ── Room Type ────────────────────────────────────────────────────────
+    RoomType:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        property_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          examples: ['Deluxe King']
+        description:
+          type: string
+        max_occupancy:
+          type: integer
+          minimum: 1
+        bed_configuration:
+          type: array
+          items:
+            type: object
+            properties:
+              bed_type:
+                type: string
+                enum: [single, double, queen, king, sofa_bed, bunk]
+              count:
+                type: integer
+                minimum: 1
+        size_sqm:
+          type: number
+        amenities:
+          type: array
+          items:
+            type: string
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+              caption:
+                type: string
+        total_units:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateRoomTypeRequest:
+      type: object
+      required: [name, max_occupancy, total_units]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 2000
+        max_occupancy:
+          type: integer
+          minimum: 1
+        bed_configuration:
+          type: array
+          items:
+            type: object
+            required: [bed_type, count]
+            properties:
+              bed_type:
+                type: string
+                enum: [single, double, queen, king, sofa_bed, bunk]
+              count:
+                type: integer
+                minimum: 1
+        size_sqm:
+          type: number
+          minimum: 0
+        amenities:
+          type: array
+          items:
+            type: string
+        total_units:
+          type: integer
+          minimum: 1
+
+    UpdateRoomTypeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 2000
+        max_occupancy:
+          type: integer
+          minimum: 1
+        bed_configuration:
+          type: array
+          items:
+            type: object
+            required: [bed_type, count]
+            properties:
+              bed_type:
+                type: string
+                enum: [single, double, queen, king, sofa_bed, bunk]
+              count:
+                type: integer
+                minimum: 1
+        size_sqm:
+          type: number
+          minimum: 0
+        amenities:
+          type: array
+          items:
+            type: string
+        total_units:
+          type: integer
+          minimum: 1
+
+    # ── Rate Plan ────────────────────────────────────────────────────────
+    RatePlan:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        property_id:
+          type: string
+          format: uuid
+        room_type_id:
+          type: string
+          format: uuid
+        product_id:
+          type: string
+          format: uuid
+          description: Reference to the Travel Graph product entity
+        name:
+          type: string
+          examples: ['Standard Flexible']
+        refundable:
+          type: boolean
+        meal_plan:
+          type: string
+          enum:
+            - none
+            - breakfast
+            - half_board
+            - full_board
+            - all_inclusive
+        cancellation_policy_id:
+          type: string
+          format: uuid
+        base_price:
+          type: number
+          format: double
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          examples: ['USD']
+        active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateRatePlanRequest:
+      type: object
+      required:
+        - room_type_id
+        - product_id
+        - name
+        - refundable
+        - meal_plan
+      properties:
+        room_type_id:
+          type: string
+          format: uuid
+        product_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        refundable:
+          type: boolean
+        meal_plan:
+          type: string
+          enum: [none, breakfast, half_board, full_board, all_inclusive]
+        cancellation_policy_id:
+          type: string
+          format: uuid
+        base_price:
+          type: number
+          format: double
+          minimum: 0
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+
+    # ── Inventory ────────────────────────────────────────────────────────
+    InventoryUpdate:
+      type: object
+      required: [rate_plan_id, date, available, price, currency]
+      properties:
+        rate_plan_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        available:
+          type: integer
+          minimum: 0
+        price:
+          type: number
+          format: double
+          minimum: 0
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        closed:
+          type: boolean
+          default: false
+
+    InventoryNight:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        property_id:
+          type: string
+          format: uuid
+        rate_plan_id:
+          type: string
+          format: uuid
+        room_type_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        available:
+          type: integer
+          minimum: 0
+        booked:
+          type: integer
+          minimum: 0
+        price:
+          type: number
+          format: double
+        currency:
+          type: string
+        closed:
+          type: boolean
+
+    # ── Host Profile ─────────────────────────────────────────────────────
+    HostProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        bio:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        languages:
+          type: array
+          items:
+            type: string
+        response_rate:
+          type: number
+          format: double
+          description: Percentage of inquiries responded to within 24 hours
+          minimum: 0
+          maximum: 100
+        response_time_minutes:
+          type: integer
+          description: Average response time in minutes
+        superhost:
+          type: boolean
+        total_reviews:
+          type: integer
+        rating_avg:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+        rating_breakdown:
+          type: object
+          properties:
+            cleanliness:
+              type: number
+              format: double
+            communication:
+              type: number
+              format: double
+            check_in:
+              type: number
+              format: double
+            accuracy:
+              type: number
+              format: double
+            location:
+              type: number
+              format: double
+            value:
+              type: number
+              format: double
+        member_since:
+          type: string
+          format: date-time
+        verified:
+          type: boolean
+
+    UpdateHostProfileRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        bio:
+          type: string
+          maxLength: 2000
+        avatar_url:
+          type: string
+          format: uri
+        languages:
+          type: array
+          items:
+            type: string
+
+    # ── Search Result ────────────────────────────────────────────────────
+    StaySearchResult:
+      type: object
+      properties:
+        property_id:
+          type: string
+          format: uuid
+        property_type:
+          $ref: '#/components/schemas/PropertyType'
+        title:
+          type: string
+        price_per_night:
+          type: number
+          format: double
+        total_price:
+          type: number
+          format: double
+        currency:
+          type: string
+        rating_avg:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+        rating_count:
+          type: integer
+        host_superhost:
+          type: boolean
+        amenities:
+          type: array
+          items:
+            type: string
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+              caption:
+                type: string
+        intelligence_scores:
+          $ref: '#/components/schemas/PropertyIntelligence'
+        instant_book:
+          type: boolean
+        coordinates:
+          type: object
+          properties:
+            latitude:
+              type: number
+              format: double
+            longitude:
+              type: number
+              format: double
+
+    # ── Reservation ──────────────────────────────────────────────────────
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        property_id:
+          type: string
+          format: uuid
+        rate_plan_id:
+          type: string
+          format: uuid
+        guest_id:
+          type: string
+          format: uuid
+        host_id:
+          type: string
+          format: uuid
+        check_in:
+          type: string
+          format: date
+        check_out:
+          type: string
+          format: date
+        nights:
+          type: integer
+        guests:
+          type: integer
+        special_requests:
+          type: string
+        price_per_night:
+          type: number
+          format: double
+        total_price:
+          type: number
+          format: double
+        currency:
+          type: string
+        service_fee:
+          type: number
+          format: double
+        cleaning_fee:
+          type: number
+          format: double
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - checked_in
+            - checked_out
+            - cancelled
+            - declined
+        cancellation_policy:
+          type: object
+          properties:
+            policy_id:
+              type: string
+              format: uuid
+            refund_percent:
+              type: number
+            cutoff_date:
+              type: string
+              format: date-time
+        confirmation_code:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateReservationRequest:
+      type: object
+      required:
+        - property_id
+        - rate_plan_id
+        - check_in
+        - check_out
+        - guests
+      properties:
+        property_id:
+          type: string
+          format: uuid
+        rate_plan_id:
+          type: string
+          format: uuid
+        check_in:
+          type: string
+          format: date
+        check_out:
+          type: string
+          format: date
+        guests:
+          type: integer
+          minimum: 1
+        special_requests:
+          type: string
+          maxLength: 2000
+
+    # ── Reviews ──────────────────────────────────────────────────────────
+    MutualReview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reservation_id:
+          type: string
+          format: uuid
+        reviewer_id:
+          type: string
+          format: uuid
+        reviewer_role:
+          type: string
+          enum: [guest, host]
+        rating:
+          type: number
+          format: double
+          minimum: 1
+          maximum: 5
+        rating_categories:
+          type: object
+          properties:
+            cleanliness:
+              type: number
+              format: double
+              minimum: 1
+              maximum: 5
+            communication:
+              type: number
+              format: double
+              minimum: 1
+              maximum: 5
+            check_in:
+              type: number
+              format: double
+              minimum: 1
+              maximum: 5
+            accuracy:
+              type: number
+              format: double
+              minimum: 1
+              maximum: 5
+            location:
+              type: number
+              format: double
+              minimum: 1
+              maximum: 5
+            value:
+              type: number
+              format: double
+              minimum: 1
+              maximum: 5
+        text:
+          type: string
+        visible:
+          type: boolean
+          description: Whether this review is currently visible to all parties
+        created_at:
+          type: string
+          format: date-time
+
+    CreateReviewRequest:
+      type: object
+      required: [rating, text]
+      properties:
+        rating:
+          type: number
+          format: double
+          minimum: 1
+          maximum: 5
+        rating_categories:
+          type: object
+          properties:
+            cleanliness:
+              type: number
+              format: double
+              minimum: 1
+              maximum: 5
+            communication:
+              type: number
+              format: double
+              minimum: 1
+              maximum: 5
+            check_in:
+              type: number
+              format: double
+              minimum: 1
+              maximum: 5
+            accuracy:
+              type: number
+              format: double
+              minimum: 1
+              maximum: 5
+            location:
+              type: number
+              format: double
+              minimum: 1
+              maximum: 5
+            value:
+              type: number
+              format: double
+              minimum: 1
+              maximum: 5
+        text:
+          type: string
+          minLength: 10
+          maxLength: 5000
+
+    # ── Damage Claims ────────────────────────────────────────────────────
+    DamageClaim:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reservation_id:
+          type: string
+          format: uuid
+        claimant_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          minimum: 0
+        currency:
+          type: string
+        description:
+          type: string
+        evidence:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [photo, video, receipt, document]
+              url:
+                type: string
+                format: uri
+              description:
+                type: string
+              uploaded_at:
+                type: string
+                format: date-time
+        status:
+          type: string
+          enum:
+            - submitted
+            - under_review
+            - approved
+            - partially_approved
+            - denied
+            - resolved
+        resolution:
+          type: object
+          nullable: true
+          properties:
+            amount_approved:
+              type: number
+              format: double
+            note:
+              type: string
+            resolved_at:
+              type: string
+              format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateDamageClaimRequest:
+      type: object
+      required: [amount, description, evidence]
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        description:
+          type: string
+          minLength: 10
+          maxLength: 5000
+        evidence:
+          type: array
+          items:
+            type: object
+            required: [type, url]
+            properties:
+              type:
+                type: string
+                enum: [photo, video, receipt, document]
+              url:
+                type: string
+                format: uri
+              description:
+                type: string
+          minItems: 1
+
+    UpdateDamageClaimRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [approved, partially_approved, denied, resolved]
+        resolution:
+          type: object
+          properties:
+            amount_approved:
+              type: number
+              format: double
+              minimum: 0
+            note:
+              type: string
+              maxLength: 2000
+
+    # ── Property Messaging ───────────────────────────────────────────────
+    PropertyMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        thread_id:
+          type: string
+          format: uuid
+        sender_id:
+          type: string
+          format: uuid
+        body:
+          type: string
+        content_type:
+          type: string
+          enum: [text, html]
+          default: text
+        created_at:
+          type: string
+          format: date-time
+
+    SendMessageRequest:
+      type: object
+      required: [body]
+      properties:
+        thread_id:
+          type: string
+          format: uuid
+          description: Existing thread ID, or omit to create a new thread
+        reservation_id:
+          type: string
+          format: uuid
+          description: Link message to a reservation
+        body:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        content_type:
+          type: string
+          enum: [text, html]
+          default: text
+
+    PropertyThread:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        property_id:
+          type: string
+          format: uuid
+        reservation_id:
+          type: string
+          format: uuid
+          nullable: true
+        participants:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+                format: uuid
+              role:
+                type: string
+                enum: [guest, host]
+              display_name:
+                type: string
+        last_message_at:
+          type: string
+          format: date-time
+        last_message_preview:
+          type: string
+        unread_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    PropertyThreadDetail:
+      allOf:
+        - $ref: '#/components/schemas/PropertyThread'
+        - type: object
+          properties:
+            messages:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/PropertyMessage'
+                cursor:
+                  $ref: '#/components/schemas/Cursor'
+                total:
+                  type: integer
+
+    # ── Intelligence ─────────────────────────────────────────────────────
+    PropertyIntelligence:
+      type: object
+      properties:
+        property_id:
+          type: string
+          format: uuid
+        overall_score:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+        scores:
+          type: object
+          properties:
+            listing_quality:
+              type: number
+              format: double
+              minimum: 0
+              maximum: 100
+              description: Completeness and quality of listing content
+            pricing_competitiveness:
+              type: number
+              format: double
+              minimum: 0
+              maximum: 100
+              description: How competitive pricing is vs comparable listings
+            guest_satisfaction:
+              type: number
+              format: double
+              minimum: 0
+              maximum: 100
+              description: Aggregate guest review sentiment score
+            response_quality:
+              type: number
+              format: double
+              minimum: 0
+              maximum: 100
+              description: Host responsiveness and communication quality
+            booking_performance:
+              type: number
+              format: double
+              minimum: 0
+              maximum: 100
+              description: Occupancy rate and booking conversion
+            photo_quality:
+              type: number
+              format: double
+              minimum: 0
+              maximum: 100
+              description: AI-assessed photo quality and coverage
+        recommendations:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+              priority:
+                type: string
+                enum: [low, medium, high]
+              title:
+                type: string
+              description:
+                type: string
+        computed_at:
+          type: string
+          format: date-time

@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ai.action.executed",
+  "description": "Emitted after an AI-proposed action has been approved and executed",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": ["proposal_id", "trip_id", "approved_by", "approved_at", "executed_actions", "execution_duration_ms", "side_effects"],
+      "properties": {
+        "proposal_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Reference to the original ai.action.proposed event"
+        },
+        "trip_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Trip the actions were executed against"
+        },
+        "approved_by": {
+          "type": "string",
+          "description": "User ID who approved, or 'auto' for auto-approved actions"
+        },
+        "approved_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when approval was granted"
+        },
+        "executed_actions": {
+          "type": "array",
+          "description": "Results of each executed action",
+          "items": {
+            "type": "object",
+            "required": ["type", "target_id", "result"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Type of action that was executed"
+              },
+              "target_id": {
+                "type": "string",
+                "description": "Target entity of the action"
+              },
+              "result": {
+                "type": "string",
+                "enum": ["success", "failed", "partial"],
+                "description": "Outcome of the action execution"
+              },
+              "error": {
+                "type": "string",
+                "description": "Error message if the action failed or partially succeeded"
+              }
+            }
+          }
+        },
+        "execution_duration_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total execution time in milliseconds"
+        },
+        "side_effects": {
+          "type": "array",
+          "description": "Other events or changes caused by the execution",
+          "items": {
+            "type": "object",
+            "required": ["event_type", "entity_id"],
+            "properties": {
+              "event_type": {
+                "type": "string",
+                "description": "Type of the side-effect event"
+              },
+              "entity_id": {
+                "type": "string",
+                "description": "Entity affected by the side-effect"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

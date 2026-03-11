@@ -1,0 +1,1111 @@
+openapi: 3.1.0
+info:
+  title: Atlas One - Travel Graph API
+  description: |
+    Provides the unified knowledge graph for entities, places, venues,
+    suppliers, products, inventory, reviews, and AI-powered semantic search
+    across the Atlas One platform.
+  version: 1.0.0
+  contact:
+    name: Atlas One API Support
+    email: api-support@atlasone.com
+
+servers:
+  - url: https://api.atlasone.com/v1/graph
+    description: Production
+  - url: https://api.staging.atlasone.com/v1/graph
+    description: Staging
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Entities
+    description: Generic entity CRUD and relationship traversal
+  - name: Places
+    description: Geographic place hierarchy
+  - name: Venues
+    description: Physical venue lookup
+  - name: Semantic Search
+    description: AI-powered embedding-based search
+
+paths:
+  # ── Entities ───────────────────────────────────────────────────────────
+  /entities:
+    get:
+      operationId: searchEntities
+      tags: [Entities]
+      summary: Search entities
+      parameters:
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/EntityType'
+        - name: query
+          in: query
+          schema:
+            type: string
+            minLength: 1
+          description: Free-text search across entity names and descriptions
+        - name: place_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter entities linked to a specific place
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Entity search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Entity'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      operationId: createEntity
+      tags: [Entities]
+      summary: Create entity (admin/partner)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEntityRequest'
+      responses:
+        '201':
+          description: Entity created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /entities/{entityId}:
+    parameters:
+      - $ref: '#/components/parameters/EntityId'
+
+    get:
+      operationId: getEntity
+      tags: [Entities]
+      summary: Get entity with relationships
+      responses:
+        '200':
+          description: Entity with relationships
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntityDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      operationId: updateEntity
+      tags: [Entities]
+      summary: Update entity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEntityRequest'
+      responses:
+        '200':
+          description: Entity updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  # ── Places ─────────────────────────────────────────────────────────────
+  /places:
+    get:
+      operationId: searchPlaces
+      tags: [Places]
+      summary: Search places
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: Search by place name
+        - name: country_code
+          in: query
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 2
+            description: ISO 3166-1 alpha-2
+        - name: place_type
+          in: query
+          schema:
+            type: string
+            enum:
+              - continent
+              - country
+              - state
+              - region
+              - city
+              - district
+              - neighborhood
+              - airport
+              - poi
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: Place search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Place'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /places/{placeId}:
+    parameters:
+      - name: placeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      operationId: getPlace
+      tags: [Places]
+      summary: Get place with children
+      responses:
+        '200':
+          description: Place with child places
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Venues ─────────────────────────────────────────────────────────────
+  /venues:
+    get:
+      operationId: searchVenues
+      tags: [Venues]
+      summary: Search venues
+      parameters:
+        - name: place_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by place
+        - name: venue_type
+          in: query
+          schema:
+            type: string
+            enum:
+              - hotel
+              - restaurant
+              - attraction
+              - airport
+              - train_station
+              - bus_station
+              - rental_office
+              - event_space
+              - shopping
+              - nightlife
+        - name: query
+          in: query
+          schema:
+            type: string
+            minLength: 1
+          description: Free-text search by venue name
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Venue search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Venue'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /venues/{venueId}:
+    parameters:
+      - name: venueId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      operationId: getVenue
+      tags: [Venues]
+      summary: Get venue details
+      responses:
+        '200':
+          description: Venue detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Semantic Search ────────────────────────────────────────────────────
+  /search/semantic:
+    get:
+      operationId: semanticSearch
+      tags: [Semantic Search]
+      summary: Semantic search using embeddings
+      description: |
+        Performs AI-powered semantic search across the travel graph using
+        vector embeddings. Understands natural language queries such as
+        "beachfront villa with private pool near Bali" and returns
+        ranked results across entity types.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 500
+          description: Natural language search query
+        - name: type
+          in: query
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/EntityType'
+          style: form
+          explode: false
+          description: Filter by entity type(s)
+        - name: place_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Scope search to a specific place and its children
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: Semantic search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SearchResult'
+                  query_embedding_model:
+                    type: string
+                    description: Model used for embedding
+                    examples: ['text-embedding-3-large']
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    EntityId:
+      name: entityId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableEntity:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # ── Common ───────────────────────────────────────────────────────────
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              examples: ['ENTITY_NOT_FOUND']
+            message:
+              type: string
+              examples: ['The requested entity does not exist.']
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  reason:
+                    type: string
+
+    Cursor:
+      type: object
+      properties:
+        next:
+          type: string
+          nullable: true
+        prev:
+          type: string
+          nullable: true
+
+    # ── Entity Type Enum ─────────────────────────────────────────────────
+    EntityType:
+      type: string
+      enum:
+        - place
+        - venue
+        - supplier
+        - product
+        - inventory_slot
+        - review
+
+    # ── Entity ───────────────────────────────────────────────────────────
+    Entity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/EntityType'
+        name:
+          type: string
+        slug:
+          type: string
+          examples: ['hilton-garden-inn-times-square']
+        description:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, pending_review]
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Type-specific metadata
+        place_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateEntityRequest:
+      type: object
+      required: [type, name]
+      properties:
+        type:
+          $ref: '#/components/schemas/EntityType'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 300
+        slug:
+          type: string
+          maxLength: 300
+          description: URL-friendly slug (auto-generated if omitted)
+        description:
+          type: string
+          maxLength: 10000
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        place_id:
+          type: string
+          format: uuid
+        parent_entity_id:
+          type: string
+          format: uuid
+          description: Parent entity for hierarchical relationships
+
+    UpdateEntityRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 300
+        slug:
+          type: string
+          maxLength: 300
+        description:
+          type: string
+          maxLength: 10000
+        status:
+          type: string
+          enum: [active, inactive, pending_review]
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        place_id:
+          type: string
+          format: uuid
+
+    EntityDetail:
+      allOf:
+        - $ref: '#/components/schemas/Entity'
+        - type: object
+          properties:
+            relationships:
+              type: array
+              items:
+                type: object
+                properties:
+                  relationship_type:
+                    type: string
+                    enum:
+                      - parent
+                      - child
+                      - located_in
+                      - supplied_by
+                      - offers
+                      - reviewed
+                      - related_to
+                  target_entity:
+                    $ref: '#/components/schemas/Entity'
+            resolved:
+              type: object
+              nullable: true
+              description: |
+                Type-specific resolved data. Contains the full Place, Venue,
+                Supplier, Product, InventorySlot, or Review object depending
+                on the entity type.
+              oneOf:
+                - $ref: '#/components/schemas/Place'
+                - $ref: '#/components/schemas/Venue'
+                - $ref: '#/components/schemas/Supplier'
+                - $ref: '#/components/schemas/Product'
+                - $ref: '#/components/schemas/InventorySlot'
+                - $ref: '#/components/schemas/Review'
+
+    # ── Place ────────────────────────────────────────────────────────────
+    Place:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        entity_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          examples: ['Paris']
+        place_type:
+          type: string
+          enum:
+            - continent
+            - country
+            - state
+            - region
+            - city
+            - district
+            - neighborhood
+            - airport
+            - poi
+        country_code:
+          type: string
+          description: ISO 3166-1 alpha-2
+          examples: ['FR']
+        parent_place_id:
+          type: string
+          format: uuid
+          nullable: true
+        coordinates:
+          type: object
+          properties:
+            latitude:
+              type: number
+              format: double
+            longitude:
+              type: number
+              format: double
+        bounding_box:
+          type: object
+          nullable: true
+          properties:
+            north:
+              type: number
+              format: double
+            south:
+              type: number
+              format: double
+            east:
+              type: number
+              format: double
+            west:
+              type: number
+              format: double
+        timezone:
+          type: string
+          examples: ['Europe/Paris']
+        population:
+          type: integer
+          nullable: true
+        photo_url:
+          type: string
+          format: uri
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PlaceDetail:
+      allOf:
+        - $ref: '#/components/schemas/Place'
+        - type: object
+          properties:
+            breadcrumbs:
+              type: array
+              items:
+                type: object
+                properties:
+                  place_id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  place_type:
+                    type: string
+              description: Ancestor chain from continent down to this place
+            children:
+              type: array
+              items:
+                $ref: '#/components/schemas/Place'
+              description: Direct child places
+            venue_count:
+              type: integer
+              description: Total venues in this place
+            stats:
+              type: object
+              properties:
+                avg_hotel_price:
+                  type: number
+                  format: double
+                  nullable: true
+                avg_rating:
+                  type: number
+                  format: double
+                  nullable: true
+                popular_months:
+                  type: array
+                  items:
+                    type: integer
+                    minimum: 1
+                    maximum: 12
+                  description: Peak travel months (1-12)
+
+    # ── Venue ────────────────────────────────────────────────────────────
+    Venue:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        entity_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        venue_type:
+          type: string
+          enum:
+            - hotel
+            - restaurant
+            - attraction
+            - airport
+            - train_station
+            - bus_station
+            - rental_office
+            - event_space
+            - shopping
+            - nightlife
+        place_id:
+          type: string
+          format: uuid
+        address:
+          type: object
+          properties:
+            street:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            postal_code:
+              type: string
+            country_code:
+              type: string
+        coordinates:
+          type: object
+          properties:
+            latitude:
+              type: number
+              format: double
+            longitude:
+              type: number
+              format: double
+        phone:
+          type: string
+          nullable: true
+        website:
+          type: string
+          format: uri
+          nullable: true
+        rating_avg:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+          nullable: true
+        rating_count:
+          type: integer
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+              caption:
+                type: string
+        operating_hours:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: object
+            properties:
+              open:
+                type: string
+                format: time
+              close:
+                type: string
+                format: time
+              closed:
+                type: boolean
+          description: Keyed by day of week (monday, tuesday, etc.)
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    VenueDetail:
+      allOf:
+        - $ref: '#/components/schemas/Venue'
+        - type: object
+          properties:
+            suppliers:
+              type: array
+              items:
+                $ref: '#/components/schemas/Supplier'
+            products:
+              type: array
+              items:
+                $ref: '#/components/schemas/Product'
+            reviews:
+              type: array
+              items:
+                $ref: '#/components/schemas/Review'
+              description: Most recent reviews (limited to 10)
+            place:
+              $ref: '#/components/schemas/Place'
+
+    # ── Supplier ─────────────────────────────────────────────────────────
+    Supplier:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        entity_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        supplier_type:
+          type: string
+          enum:
+            - hotel_chain
+            - airline
+            - tour_operator
+            - car_rental
+            - individual_host
+            - property_manager
+            - insurance_provider
+        logo_url:
+          type: string
+          format: uri
+          nullable: true
+        website:
+          type: string
+          format: uri
+          nullable: true
+        contact_email:
+          type: string
+          format: email
+          nullable: true
+        rating_avg:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+          nullable: true
+        total_products:
+          type: integer
+        verified:
+          type: boolean
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Product ──────────────────────────────────────────────────────────
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        entity_id:
+          type: string
+          format: uuid
+        supplier_id:
+          type: string
+          format: uuid
+        venue_id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          examples: ['Deluxe King Room - Flexible Rate']
+        product_type:
+          type: string
+          enum:
+            - stay
+            - flight
+            - experience
+            - transfer
+            - car_rental
+            - insurance
+            - package
+        description:
+          type: string
+        base_price:
+          type: number
+          format: double
+          nullable: true
+        currency:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Inventory Slot ───────────────────────────────────────────────────
+    InventorySlot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        entity_id:
+          type: string
+          format: uuid
+        product_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        time_slot:
+          type: string
+          format: time
+          nullable: true
+          description: For time-specific inventory (tours, transfers)
+        capacity:
+          type: integer
+          minimum: 0
+        available:
+          type: integer
+          minimum: 0
+        price:
+          type: number
+          format: double
+        currency:
+          type: string
+        closed:
+          type: boolean
+          default: false
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Review ───────────────────────────────────────────────────────────
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        entity_id:
+          type: string
+          format: uuid
+        target_entity_id:
+          type: string
+          format: uuid
+          description: Entity being reviewed (venue, product, supplier)
+        reviewer_id:
+          type: string
+          format: uuid
+        reviewer_name:
+          type: string
+        rating:
+          type: number
+          format: double
+          minimum: 1
+          maximum: 5
+        title:
+          type: string
+          nullable: true
+        text:
+          type: string
+        rating_categories:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+            minimum: 1
+            maximum: 5
+          description: Category-specific ratings (e.g., cleanliness, value)
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+              caption:
+                type: string
+        verified_purchase:
+          type: boolean
+          description: Whether reviewer had a confirmed booking
+        helpful_count:
+          type: integer
+        response:
+          type: object
+          nullable: true
+          properties:
+            responder_id:
+              type: string
+              format: uuid
+            responder_name:
+              type: string
+            text:
+              type: string
+            responded_at:
+              type: string
+              format: date-time
+          description: Supplier/host response to the review
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Semantic Search Result ───────────────────────────────────────────
+    SearchResult:
+      type: object
+      properties:
+        entity:
+          $ref: '#/components/schemas/Entity'
+        relevance_score:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Cosine similarity score from embedding search
+        highlight:
+          type: string
+          nullable: true
+          description: Highlighted snippet showing why this result matched
+        resolved_type:
+          type: string
+          description: Discriminator for the resolved field
+        resolved:
+          type: object
+          nullable: true
+          description: Type-specific resolved data
+          oneOf:
+            - $ref: '#/components/schemas/Place'
+            - $ref: '#/components/schemas/Venue'
+            - $ref: '#/components/schemas/Supplier'
+            - $ref: '#/components/schemas/Product'

@@ -1,0 +1,820 @@
+openapi: 3.1.0
+info:
+  title: Atlas One -- AI Tools Service API
+  description: |
+    API for interacting with the Atlas One AI Orchestrator. Provides endpoints for
+    sending messages to the trip agent, managing proposals (review, approve, reject),
+    monitoring execution status, triggering re-planning, and retrieving proactive suggestions.
+
+    **Design invariant**: AI agents cannot mutate state directly. Every write operation
+    flows through verified tool calls managed by the orchestrator. Users interact with
+    the agent through this API and approve/reject proposals before actions execute.
+  version: 1.0.0
+  contact:
+    name: Atlas One Platform Team
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.atlasone.travel/v1
+    description: Production
+  - url: https://api.staging.atlasone.travel/v1
+    description: Staging
+
+tags:
+  - name: Messages
+    description: Send messages to the trip agent and receive responses.
+  - name: Proposals
+    description: Review, approve, and reject agent-generated proposals.
+  - name: Planning
+    description: Trigger re-planning and retrieve proactive suggestions.
+
+paths:
+  /ai/trips/{tripId}/message:
+    post:
+      operationId: sendMessageToAgent
+      summary: Send a message to the trip agent
+      description: |
+        Send a natural-language message to the trip's AI agent. The orchestrator
+        classifies the intent, routes to the appropriate sub-agent, and returns
+        a response that may include recommendations, proposals, or clarification
+        questions.
+
+        The response includes grounding citations for every factual claim. Claims
+        without internal evidence are labeled as "unverified" in the metadata.
+      tags:
+        - Messages
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/tripId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  description: The user's natural-language message.
+                  minLength: 1
+                  maxLength: 4000
+                  example: Find me a restaurant in Rome for 4 people on March 15th, preferably Italian cuisine.
+                context:
+                  type: object
+                  description: Optional additional context to supplement the message.
+                  properties:
+                    preferredModelTier:
+                      type: string
+                      enum: [fast, strong]
+                      description: Request a specific model tier for this message.
+                    locale:
+                      type: string
+                      description: User's locale for localized responses.
+                      example: en-US
+                    timezone:
+                      type: string
+                      description: User's timezone for date/time interpretation.
+                      example: America/New_York
+      responses:
+        '200':
+          description: Agent response with recommendations and/or proposals.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/TripNotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /ai/trips/{tripId}/proposals:
+    get:
+      operationId: listProposals
+      summary: List pending proposals for a trip
+      description: |
+        Retrieve all proposals for the trip, filtered by status. Defaults to
+        showing only pending proposals that await user approval.
+      tags:
+        - Proposals
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/tripId'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending_approval, approved, rejected, expired, executing, executed, partially_failed]
+          description: Filter proposals by status. Defaults to pending_approval.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+          description: Maximum number of proposals to return.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Pagination cursor from previous response.
+      responses:
+        '200':
+          description: List of proposals.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - proposals
+                properties:
+                  proposals:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Proposal'
+                  nextCursor:
+                    type: string
+                    nullable: true
+                    description: Cursor for the next page, or null if no more results.
+                  totalCount:
+                    type: integer
+                    description: Total number of proposals matching the filter.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/TripNotFound'
+
+  /ai/trips/{tripId}/proposals/{proposalId}/approve:
+    post:
+      operationId: approveProposal
+      summary: Approve a pending proposal
+      description: |
+        Approve a pending proposal to trigger sequential execution of its actions.
+        Once approved, the orchestrator executes actions in order with rollback
+        on failure. The execution status can be tracked via the status endpoint.
+      tags:
+        - Proposals
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/tripId'
+        - $ref: '#/components/parameters/proposalId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paymentMethodId:
+                  type: string
+                  description: Payment method to use for paid actions. Overrides the default.
+                notes:
+                  type: string
+                  description: Optional notes or instructions for execution.
+                  maxLength: 1000
+      responses:
+        '202':
+          description: Proposal approved and execution started.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - proposalId
+                  - status
+                  - executionStartedAt
+                properties:
+                  proposalId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [executing]
+                  executionStartedAt:
+                    type: string
+                    format: date-time
+                  estimatedCompletionSeconds:
+                    type: integer
+                    description: Estimated time to complete all actions.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ProposalNotFound'
+        '409':
+          description: Proposal is not in a state that can be approved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /ai/trips/{tripId}/proposals/{proposalId}/reject:
+    post:
+      operationId: rejectProposal
+      summary: Reject a pending proposal with feedback
+      description: |
+        Reject a pending proposal and provide feedback. The agent uses this
+        feedback to improve future proposals. Feedback is required to help
+        the agent understand what went wrong.
+      tags:
+        - Proposals
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/tripId'
+        - $ref: '#/components/parameters/proposalId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - feedback
+              properties:
+                feedback:
+                  type: string
+                  description: Why the proposal was rejected. Helps the agent improve.
+                  minLength: 1
+                  maxLength: 2000
+                  example: The restaurant is too expensive. I'd prefer something under 50 EUR per person.
+                retryWithAdjustments:
+                  type: boolean
+                  default: false
+                  description: Whether the agent should automatically generate an adjusted proposal.
+      responses:
+        '200':
+          description: Proposal rejected with feedback recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - proposalId
+                  - status
+                properties:
+                  proposalId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [rejected]
+                  feedbackRecorded:
+                    type: boolean
+                  retryProposalId:
+                    type: string
+                    nullable: true
+                    description: ID of the new proposal if retryWithAdjustments was true.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ProposalNotFound'
+        '409':
+          description: Proposal is not in a state that can be rejected.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /ai/trips/{tripId}/proposals/{proposalId}/status:
+    get:
+      operationId: getProposalStatus
+      summary: Get execution status of a proposal
+      description: |
+        Retrieve the current execution status of an approved proposal. Returns
+        per-action execution results, including any rollbacks that occurred.
+      tags:
+        - Proposals
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/tripId'
+        - $ref: '#/components/parameters/proposalId'
+      responses:
+        '200':
+          description: Proposal execution status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ProposalNotFound'
+
+  /ai/trips/{tripId}/replan:
+    post:
+      operationId: triggerReplan
+      summary: Trigger manual re-planning
+      description: |
+        Manually trigger re-planning for the trip. The Risk Agent evaluates
+        current conditions and the orchestrator coordinates sub-agents to
+        generate alternative proposals for affected bookings.
+      tags:
+        - Planning
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/tripId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Reason for triggering re-planning.
+                  maxLength: 1000
+                  example: Flight was cancelled due to weather.
+                affectedBookingIds:
+                  type: array
+                  items:
+                    type: string
+                  description: Specific bookings to re-plan. Defaults to all bookings.
+                constraints:
+                  type: object
+                  description: Additional constraints for re-planning.
+                  properties:
+                    maxBudgetIncrease:
+                      type: object
+                      properties:
+                        amount:
+                          type: number
+                        currency:
+                          type: string
+                    preferSameProviders:
+                      type: boolean
+                    maxScheduleShiftHours:
+                      type: integer
+      responses:
+        '202':
+          description: Re-planning initiated.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - replanId
+                  - status
+                properties:
+                  replanId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [in_progress]
+                  affectedBookings:
+                    type: integer
+                    description: Number of bookings being re-planned.
+                  estimatedCompletionSeconds:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/TripNotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /ai/trips/{tripId}/suggestions:
+    get:
+      operationId: getProactiveSuggestions
+      summary: Get proactive suggestions for a trip
+      description: |
+        Retrieve proactive suggestions generated by the AI agents. These are
+        unsolicited recommendations based on continuous monitoring of the trip
+        context, such as price drops, disruption risks, or optimization
+        opportunities.
+      tags:
+        - Planning
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/tripId'
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [price_drop, disruption_risk, optimization, experience, dining, budget]
+          description: Filter suggestions by category.
+        - name: minPriority
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [low, medium, high]
+            default: low
+          description: Minimum priority level to include.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+      responses:
+        '200':
+          description: Proactive suggestions.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - suggestions
+                properties:
+                  suggestions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProactiveSuggestion'
+                  totalCount:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/TripNotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from the Atlas One authentication service.
+
+  parameters:
+    tripId:
+      name: tripId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique trip identifier.
+      example: trip_abc123
+
+    proposalId:
+      name: proposalId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique proposal identifier.
+      example: prop_xyz789
+
+  schemas:
+    AgentResponse:
+      type: object
+      required:
+        - message
+        - proposals
+        - metadata
+      properties:
+        message:
+          type: string
+          description: The agent's natural-language response.
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Proposal'
+          description: Proposals generated from this message (may be empty).
+        groundingResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroundingResult'
+          description: Evidence backing the agent's response.
+        metadata:
+          type: object
+          required:
+            - agentId
+            - traceId
+            - modelTier
+            - latencyMs
+          properties:
+            agentId:
+              type: string
+              description: The agent that generated this response.
+            traceId:
+              type: string
+              description: Unique trace ID for debugging and audit.
+            modelTier:
+              type: string
+              enum: [fast, strong, specialized]
+              description: Model tier used for this response.
+            latencyMs:
+              type: integer
+              description: Response generation latency in milliseconds.
+            unverifiedClaims:
+              type: array
+              items:
+                type: string
+              description: Factual claims that could not be grounded in internal data.
+
+    Proposal:
+      type: object
+      required:
+        - proposalId
+        - tripId
+        - createdBy
+        - createdAt
+        - expiresAt
+        - summary
+        - actions
+        - totalEstimatedCost
+        - status
+      properties:
+        proposalId:
+          type: string
+        tripId:
+          type: string
+        createdBy:
+          type: string
+          description: The agent that created this proposal.
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        summary:
+          type: string
+          description: Human-readable summary of the proposal.
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProposedAction'
+        totalEstimatedCost:
+          type: object
+          properties:
+            amount:
+              type: number
+            currency:
+              type: string
+        budgetImpact:
+          $ref: '#/components/schemas/BudgetImpact'
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        status:
+          type: string
+          enum: [pending_approval, approved, rejected, expired, executing, executed, partially_failed]
+
+    ProposedAction:
+      type: object
+      required:
+        - sequence
+        - tool
+        - params
+        - description
+      properties:
+        sequence:
+          type: integer
+          description: Execution order (1-based).
+        tool:
+          type: string
+          description: Tool to execute.
+        params:
+          type: object
+          description: Parameters for the tool call.
+        estimatedCost:
+          type: object
+          nullable: true
+          properties:
+            amount:
+              type: number
+            currency:
+              type: string
+        rollbackTool:
+          type: string
+          nullable: true
+          description: Tool to call if rollback is needed.
+        description:
+          type: string
+          description: Human-readable description of this action.
+
+    BudgetImpact:
+      type: object
+      properties:
+        category:
+          type: string
+        currentSpend:
+          type: number
+        afterAction:
+          type: number
+        budgetLimit:
+          type: number
+        utilizationPct:
+          type: integer
+
+    Citation:
+      type: object
+      required:
+        - source
+        - entityId
+      properties:
+        source:
+          type: string
+          enum: [travel_graph, ugc_corpus, policy_store, partner_api]
+        entityId:
+          type: string
+        field:
+          type: string
+          nullable: true
+        value: {}
+        freshness:
+          type: string
+          format: date-time
+
+    GroundingResult:
+      type: object
+      required:
+        - content
+        - citations
+        - credibilityScore
+        - isVerified
+      properties:
+        content:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        credibilityScore:
+          type: number
+          minimum: 0
+          maximum: 1
+        isVerified:
+          type: boolean
+
+    ExecutionStatus:
+      type: object
+      required:
+        - proposalId
+        - status
+        - executedActions
+      properties:
+        proposalId:
+          type: string
+        status:
+          type: string
+          enum: [executing, success, partial_failure, failure]
+        executedActions:
+          type: array
+          items:
+            type: object
+            required:
+              - sequence
+              - tool
+              - status
+            properties:
+              sequence:
+                type: integer
+              tool:
+                type: string
+              status:
+                type: string
+                enum: [success, failure, rolled_back, pending]
+              result:
+                type: object
+                nullable: true
+              error:
+                type: string
+                nullable: true
+        rollbackPerformed:
+          type: boolean
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ProactiveSuggestion:
+      type: object
+      required:
+        - suggestionId
+        - category
+        - priority
+        - title
+        - description
+        - createdAt
+      properties:
+        suggestionId:
+          type: string
+        category:
+          type: string
+          enum: [price_drop, disruption_risk, optimization, experience, dining, budget]
+        priority:
+          type: string
+          enum: [low, medium, high]
+        title:
+          type: string
+          description: Short title for the suggestion.
+        description:
+          type: string
+          description: Detailed explanation of the suggestion.
+        affectedBookingIds:
+          type: array
+          items:
+            type: string
+        proposalId:
+          type: string
+          nullable: true
+          description: Associated proposal ID if a ready-to-approve proposal exists.
+        savings:
+          type: object
+          nullable: true
+          properties:
+            amount:
+              type: number
+            currency:
+              type: string
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code.
+        message:
+          type: string
+          description: Human-readable error message.
+        details:
+          type: object
+          description: Additional error context.
+        traceId:
+          type: string
+          description: Trace ID for debugging.
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Missing or invalid authentication.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    TripNotFound:
+      description: Trip not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ProposalNotFound:
+      description: Proposal not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    RateLimited:
+      description: Too many requests. Retry after the indicated delay.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InternalError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "commerce.order.paid",
+  "description": "Emitted when a commerce order payment is successfully processed",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": ["order_id", "user_id", "total_amount", "currency", "payment_provider", "payment_intent_id", "reservation_count", "items"],
+      "properties": {
+        "order_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the order"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who placed the order"
+        },
+        "trip_id": {
+          "type": ["string", "null"],
+          "format": "uuid",
+          "description": "Associated trip, if applicable"
+        },
+        "total_amount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total amount charged"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code"
+        },
+        "payment_provider": {
+          "type": "string",
+          "description": "Payment provider used (e.g., stripe, adyen)"
+        },
+        "payment_intent_id": {
+          "type": "string",
+          "description": "Payment provider's intent or transaction identifier"
+        },
+        "reservation_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of reservations in this order"
+        },
+        "items": {
+          "type": "array",
+          "description": "Line items in the order",
+          "items": {
+            "type": "object",
+            "required": ["reservation_id", "reservation_type", "amount"],
+            "properties": {
+              "reservation_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Reservation associated with this line item"
+              },
+              "reservation_type": {
+                "type": "string",
+                "description": "Type of reservation"
+              },
+              "amount": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Amount for this line item"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "trip.itinerary_item.added",
+  "description": "Emitted when an item is added to a trip itinerary",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": ["trip_id", "item_id", "item_type", "start_at", "end_at", "position", "source"],
+      "properties": {
+        "trip_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Trip the item is being added to"
+        },
+        "item_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the itinerary item"
+        },
+        "item_type": {
+          "type": "string",
+          "enum": ["place", "venue", "reservation", "note", "transport", "buffer"],
+          "description": "Type of itinerary item"
+        },
+        "entity_id": {
+          "type": ["string", "null"],
+          "format": "uuid",
+          "description": "Reference to a Travel Graph entity, if applicable"
+        },
+        "reservation_id": {
+          "type": ["string", "null"],
+          "format": "uuid",
+          "description": "Reference to a reservation, if applicable"
+        },
+        "start_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Scheduled start time for this item"
+        },
+        "end_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Scheduled end time for this item"
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Ordinal position within the day's itinerary"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["manual", "ai", "suggestion"],
+          "description": "How the item was added"
+        }
+      }
+    }
+  }
+}

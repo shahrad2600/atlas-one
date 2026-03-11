@@ -1,0 +1,1047 @@
+openapi: 3.1.0
+info:
+  title: Atlas One - Insurance Service API
+  description: |
+    Provides travel insurance quoting, policy binding, claims management,
+    and coverage information for trips booked on the Atlas One platform.
+  version: 1.0.0
+  contact:
+    name: Atlas One API Support
+    email: api-support@atlasone.com
+
+servers:
+  - url: https://api.atlasone.com/v1/insurance
+    description: Production
+  - url: https://api.staging.atlasone.com/v1/insurance
+    description: Staging
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Quotes
+    description: Insurance quote generation
+  - name: Policies
+    description: Policy binding and management
+  - name: Claims
+    description: Claim filing and tracking
+  - name: Coverage Types
+    description: Available coverage reference data
+
+paths:
+  # ── Quotes ─────────────────────────────────────────────────────────────
+  /quotes:
+    post:
+      operationId: requestQuotes
+      tags: [Quotes]
+      summary: Request insurance quotes
+      description: |
+        Generates one or more insurance quote options based on trip details,
+        traveler information, and desired coverage intent. Quote options are
+        returned from multiple underwriters where available.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+      responses:
+        '200':
+          description: Quote options generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quote_request_id:
+                    type: string
+                    format: uuid
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/QuoteOption'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /quotes/{quoteRequestId}:
+    parameters:
+      - name: quoteRequestId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      operationId: getQuoteOptions
+      tags: [Quotes]
+      summary: Get quote options for a request
+      responses:
+        '200':
+          description: Quote options
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quote_request_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [pending, ready, expired]
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/QuoteOption'
+                  expires_at:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Policies ───────────────────────────────────────────────────────────
+  /policies:
+    post:
+      operationId: bindPolicy
+      tags: [Policies]
+      summary: Bind policy from quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BindPolicyRequest'
+      responses:
+        '201':
+          description: Policy bound
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsurancePolicy'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Quote expired or already bound
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    get:
+      operationId: listPolicies
+      tags: [Policies]
+      summary: List user's policies
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, expired, cancelled, pending]
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paginated policy list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InsurancePolicy'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /policies/{policyId}:
+    parameters:
+      - $ref: '#/components/parameters/PolicyId'
+
+    get:
+      operationId: getPolicy
+      tags: [Policies]
+      summary: Get policy details with coverages and documents
+      responses:
+        '200':
+          description: Policy detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsurancePolicyDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /policies/{policyId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/PolicyId'
+
+    post:
+      operationId: cancelPolicy
+      tags: [Policies]
+      summary: Cancel policy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '200':
+          description: Policy cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  policy:
+                    $ref: '#/components/schemas/InsurancePolicy'
+                  refund_amount:
+                    type: number
+                    format: double
+                  refund_currency:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Policy cannot be cancelled in current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── Claims ─────────────────────────────────────────────────────────────
+  /claims:
+    post:
+      operationId: fileClaim
+      tags: [Claims]
+      summary: File insurance claim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClaimRequest'
+      responses:
+        '201':
+          description: Claim filed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsuranceClaim'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    get:
+      operationId: listClaims
+      tags: [Claims]
+      summary: List user's claims
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [submitted, under_review, approved, partially_approved, denied, paid, appealed]
+        - name: policy_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paginated claim list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InsuranceClaim'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /claims/{claimId}:
+    parameters:
+      - $ref: '#/components/parameters/ClaimId'
+
+    get:
+      operationId: getClaim
+      tags: [Claims]
+      summary: Get claim details
+      responses:
+        '200':
+          description: Claim detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsuranceClaim'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      operationId: updateClaim
+      tags: [Claims]
+      summary: Add evidence or update description
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClaimRequest'
+      responses:
+        '200':
+          description: Claim updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsuranceClaim'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Claim cannot be modified in current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /claims/{claimId}/appeal:
+    parameters:
+      - $ref: '#/components/parameters/ClaimId'
+
+    post:
+      operationId: appealClaim
+      tags: [Claims]
+      summary: Appeal denied claim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  minLength: 20
+                  maxLength: 5000
+                additional_evidence:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/EvidenceItem'
+      responses:
+        '200':
+          description: Appeal submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsuranceClaim'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Claim is not in a denied state or appeal already filed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── Coverage Types ─────────────────────────────────────────────────────
+  /coverage-types:
+    get:
+      operationId: listCoverageTypes
+      tags: [Coverage Types]
+      summary: List all available coverage types
+      security: []
+      responses:
+        '200':
+          description: Coverage types
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CoverageType'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PolicyId:
+      name: policyId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    ClaimId:
+      name: claimId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableEntity:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # ── Common ───────────────────────────────────────────────────────────
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              examples: ['QUOTE_EXPIRED']
+            message:
+              type: string
+              examples: ['The selected quote has expired. Please request new quotes.']
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  reason:
+                    type: string
+
+    Cursor:
+      type: object
+      properties:
+        next:
+          type: string
+          nullable: true
+        prev:
+          type: string
+          nullable: true
+
+    # ── Quote Request ────────────────────────────────────────────────────
+    QuoteRequest:
+      type: object
+      required:
+        - travelers
+        - trip_cost
+        - destination_countries
+        - trip_start
+        - trip_end
+      properties:
+        trip_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Link quote to an existing trip
+        reservation_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Reservation IDs this insurance should cover
+        coverage_intent:
+          type: string
+          enum:
+            - basic
+            - standard
+            - comprehensive
+            - cancel_for_any_reason
+          default: standard
+          description: Desired coverage level to guide quote generation
+        travelers:
+          type: array
+          items:
+            type: object
+            required: [date_of_birth, citizenship_country]
+            properties:
+              first_name:
+                type: string
+              last_name:
+                type: string
+              date_of_birth:
+                type: string
+                format: date
+              citizenship_country:
+                type: string
+                description: ISO 3166-1 alpha-2
+              pre_existing_conditions:
+                type: boolean
+                default: false
+          minItems: 1
+        trip_cost:
+          type: number
+          format: double
+          minimum: 0
+          description: Total trip cost to insure
+        trip_cost_currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          default: USD
+        destination_countries:
+          type: array
+          items:
+            type: string
+            description: ISO 3166-1 alpha-2
+          minItems: 1
+        trip_start:
+          type: string
+          format: date
+        trip_end:
+          type: string
+          format: date
+
+    # ── Quote Option ─────────────────────────────────────────────────────
+    QuoteOption:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        quote_request_id:
+          type: string
+          format: uuid
+        underwriter:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+              examples: ['TravelGuard']
+            rating:
+              type: string
+              examples: ['A+ (AM Best)']
+            logo_url:
+              type: string
+              format: uri
+        plan_name:
+          type: string
+          examples: ['Comprehensive Plus']
+        coverage_level:
+          type: string
+          enum: [basic, standard, comprehensive, cancel_for_any_reason]
+        premium:
+          type: number
+          format: double
+        currency:
+          type: string
+          examples: ['USD']
+        coverages:
+          type: array
+          items:
+            type: object
+            properties:
+              coverage_type_id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              limit:
+                type: number
+                format: double
+              deductible:
+                type: number
+                format: double
+              currency:
+                type: string
+              description:
+                type: string
+        benefits_summary:
+          type: array
+          items:
+            type: string
+          description: Human-readable benefit highlights
+        exclusions_summary:
+          type: array
+          items:
+            type: string
+          description: Key exclusions
+        policy_document_url:
+          type: string
+          format: uri
+          nullable: true
+          description: URL to full policy wording PDF
+        expires_at:
+          type: string
+          format: date-time
+
+    # ── Policy ───────────────────────────────────────────────────────────
+    BindPolicyRequest:
+      type: object
+      required: [quote_option_id, payment_method_id]
+      properties:
+        quote_option_id:
+          type: string
+          format: uuid
+        payment_method_id:
+          type: string
+          format: uuid
+
+    InsurancePolicy:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        quote_option_id:
+          type: string
+          format: uuid
+        policy_number:
+          type: string
+          examples: ['TG-2026-0012345']
+        underwriter:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        plan_name:
+          type: string
+        coverage_level:
+          type: string
+          enum: [basic, standard, comprehensive, cancel_for_any_reason]
+        status:
+          type: string
+          enum: [active, expired, cancelled, pending]
+        premium:
+          type: number
+          format: double
+        currency:
+          type: string
+        trip_id:
+          type: string
+          format: uuid
+          nullable: true
+        reservation_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        travelers:
+          type: array
+          items:
+            type: object
+            properties:
+              first_name:
+                type: string
+              last_name:
+                type: string
+              date_of_birth:
+                type: string
+                format: date
+        trip_start:
+          type: string
+          format: date
+        trip_end:
+          type: string
+          format: date
+        destination_countries:
+          type: array
+          items:
+            type: string
+        effective_date:
+          type: string
+          format: date-time
+        expiry_date:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    InsurancePolicyDetail:
+      allOf:
+        - $ref: '#/components/schemas/InsurancePolicy'
+        - type: object
+          properties:
+            coverages:
+              type: array
+              items:
+                type: object
+                properties:
+                  coverage_type_id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  limit:
+                    type: number
+                    format: double
+                  deductible:
+                    type: number
+                    format: double
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  benefit_usage:
+                    $ref: '#/components/schemas/BenefitUsage'
+            documents:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    enum: [policy_wording, certificate, id_card, claim_form]
+                  name:
+                    type: string
+                  url:
+                    type: string
+                    format: uri
+            claims:
+              type: array
+              items:
+                $ref: '#/components/schemas/InsuranceClaim'
+
+    # ── Claims ───────────────────────────────────────────────────────────
+    EvidenceItem:
+      type: object
+      required: [type, url]
+      properties:
+        type:
+          type: string
+          enum:
+            - receipt
+            - medical_report
+            - police_report
+            - photo
+            - boarding_pass
+            - cancellation_notice
+            - other_document
+        url:
+          type: string
+          format: uri
+        file_name:
+          type: string
+        description:
+          type: string
+
+    CreateClaimRequest:
+      type: object
+      required:
+        - policy_id
+        - claim_type
+        - incident_date
+        - description
+        - amount_claimed
+      properties:
+        policy_id:
+          type: string
+          format: uuid
+        claim_type:
+          type: string
+          enum:
+            - trip_cancellation
+            - trip_interruption
+            - medical_emergency
+            - medical_evacuation
+            - baggage_loss
+            - baggage_delay
+            - flight_delay
+            - missed_connection
+            - travel_document_loss
+            - personal_liability
+            - rental_vehicle_damage
+            - other
+        incident_date:
+          type: string
+          format: date
+        incident_location:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+          minLength: 20
+          maxLength: 10000
+        amount_claimed:
+          type: number
+          format: double
+          minimum: 0.01
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          default: USD
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceItem'
+
+    UpdateClaimRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          minLength: 20
+          maxLength: 10000
+        additional_evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceItem'
+
+    InsuranceClaim:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        policy_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        claim_number:
+          type: string
+          examples: ['CLM-2026-0056789']
+        claim_type:
+          type: string
+          enum:
+            - trip_cancellation
+            - trip_interruption
+            - medical_emergency
+            - medical_evacuation
+            - baggage_loss
+            - baggage_delay
+            - flight_delay
+            - missed_connection
+            - travel_document_loss
+            - personal_liability
+            - rental_vehicle_damage
+            - other
+        status:
+          type: string
+          enum:
+            - submitted
+            - under_review
+            - approved
+            - partially_approved
+            - denied
+            - paid
+            - appealed
+        incident_date:
+          type: string
+          format: date
+        incident_location:
+          type: string
+        description:
+          type: string
+        amount_claimed:
+          type: number
+          format: double
+        amount_approved:
+          type: number
+          format: double
+          nullable: true
+        amount_paid:
+          type: number
+          format: double
+          nullable: true
+        currency:
+          type: string
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceItem'
+        denial_reason:
+          type: string
+          nullable: true
+        appeal:
+          type: object
+          nullable: true
+          properties:
+            reason:
+              type: string
+            status:
+              type: string
+              enum: [pending, approved, denied]
+            submitted_at:
+              type: string
+              format: date-time
+            resolved_at:
+              type: string
+              format: date-time
+              nullable: true
+        adjuster_notes:
+          type: array
+          items:
+            type: object
+            properties:
+              note:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+        filed_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Coverage Type ────────────────────────────────────────────────────
+    CoverageType:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          examples: ['Trip Cancellation']
+        slug:
+          type: string
+          examples: ['trip_cancellation']
+        category:
+          type: string
+          enum:
+            - trip_protection
+            - medical
+            - baggage
+            - travel_delay
+            - liability
+            - other
+        description:
+          type: string
+        typical_limit_range:
+          type: object
+          properties:
+            min:
+              type: number
+              format: double
+            max:
+              type: number
+              format: double
+            currency:
+              type: string
+        common_exclusions:
+          type: array
+          items:
+            type: string
+
+    # ── Benefit Usage ────────────────────────────────────────────────────
+    BenefitUsage:
+      type: object
+      properties:
+        limit:
+          type: number
+          format: double
+        used:
+          type: number
+          format: double
+        remaining:
+          type: number
+          format: double
+        currency:
+          type: string
+        claims_count:
+          type: integer
+          description: Number of claims filed against this benefit

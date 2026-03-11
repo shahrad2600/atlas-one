@@ -1,0 +1,131 @@
+{
+  "version": "1.0.0",
+  "events": [
+    {
+      "event_type": "tg.entity.upserted",
+      "schema_file": "topics/tg.entity.upserted.json",
+      "schema_version": 1,
+      "producers": ["travel-graph-service"],
+      "consumers": ["search-service", "ai-orchestrator"],
+      "description": "Travel Graph entity created or updated",
+      "retention_days": 90
+    },
+    {
+      "event_type": "search.impression.logged",
+      "schema_file": "topics/search.impression.logged.json",
+      "schema_version": 1,
+      "producers": ["search-service"],
+      "consumers": ["analytics-service", "recommendation-service", "ad-service"],
+      "description": "Search results displayed to a user",
+      "retention_days": 30
+    },
+    {
+      "event_type": "trip.created",
+      "schema_file": "topics/trip.created.json",
+      "schema_version": 1,
+      "producers": ["trip-service", "ai-orchestrator"],
+      "consumers": ["analytics-service", "recommendation-service", "ai-orchestrator"],
+      "description": "New trip created by a user or AI agent",
+      "retention_days": 365
+    },
+    {
+      "event_type": "trip.itinerary_item.added",
+      "schema_file": "topics/trip.itinerary_item.added.json",
+      "schema_version": 1,
+      "producers": ["trip-service", "ai-orchestrator"],
+      "consumers": ["analytics-service", "notification-service", "ai-orchestrator"],
+      "description": "Itinerary item added to a trip",
+      "retention_days": 365
+    },
+    {
+      "event_type": "commerce.order.paid",
+      "schema_file": "topics/commerce.order.paid.json",
+      "schema_version": 1,
+      "producers": ["commerce-service"],
+      "consumers": ["fulfillment-service", "analytics-service", "finance-service", "notification-service"],
+      "description": "Commerce order payment successfully processed",
+      "retention_days": 2555
+    },
+    {
+      "event_type": "commerce.reservation.confirmed",
+      "schema_file": "topics/commerce.reservation.confirmed.json",
+      "schema_version": 1,
+      "producers": ["reservation-service", "partner-gateway"],
+      "consumers": ["trip-service", "notification-service", "analytics-service", "ai-orchestrator"],
+      "description": "Reservation confirmed with the supplier",
+      "retention_days": 2555
+    },
+    {
+      "event_type": "dining.notify.fulfilled",
+      "schema_file": "topics/dining.notify.fulfilled.json",
+      "schema_version": 1,
+      "producers": ["dining-service"],
+      "consumers": ["notification-service", "reservation-service", "analytics-service"],
+      "description": "Dining notification request fulfilled, expired, or auto-reserved",
+      "retention_days": 90
+    },
+    {
+      "event_type": "risk.review.flagged",
+      "schema_file": "topics/risk.review.flagged.json",
+      "schema_version": 1,
+      "producers": ["trust-safety-service"],
+      "consumers": ["moderation-service", "analytics-service", "notification-service"],
+      "description": "User review flagged by trust and safety system",
+      "retention_days": 730
+    },
+    {
+      "event_type": "disruption.alert.raised",
+      "schema_file": "topics/disruption.alert.raised.json",
+      "schema_version": 1,
+      "producers": ["disruption-service", "partner-gateway"],
+      "consumers": ["ai-orchestrator", "trip-service", "notification-service", "support-service"],
+      "description": "Travel disruption detected that may affect trips or reservations",
+      "retention_days": 180
+    },
+    {
+      "event_type": "ai.action.proposed",
+      "schema_file": "topics/ai.action.proposed.json",
+      "schema_version": 1,
+      "producers": ["ai-orchestrator"],
+      "consumers": ["trip-service", "notification-service", "audit-service"],
+      "description": "AI agent proposed one or more actions for a trip",
+      "retention_days": 365
+    },
+    {
+      "event_type": "ai.action.executed",
+      "schema_file": "topics/ai.action.executed.json",
+      "schema_version": 1,
+      "producers": ["ai-orchestrator"],
+      "consumers": ["trip-service", "analytics-service", "audit-service", "notification-service"],
+      "description": "AI-proposed action approved and executed",
+      "retention_days": 365
+    },
+    {
+      "event_type": "commerce.reservation.cancelled",
+      "schema_file": "topics/commerce.reservation.cancelled.json",
+      "schema_version": 1,
+      "producers": ["reservation-service", "partner-gateway", "ai-orchestrator"],
+      "consumers": ["finance-service", "trip-service", "notification-service", "analytics-service"],
+      "description": "Reservation cancelled and refund initiated",
+      "retention_days": 2555
+    },
+    {
+      "event_type": "finance.wallet.credited",
+      "schema_file": "topics/finance.wallet.credited.json",
+      "schema_version": 1,
+      "producers": ["finance-service"],
+      "consumers": ["notification-service", "analytics-service", "audit-service"],
+      "description": "User wallet credited with funds",
+      "retention_days": 2555
+    },
+    {
+      "event_type": "insurance.claim.status_changed",
+      "schema_file": "topics/insurance.claim.status_changed.json",
+      "schema_version": 1,
+      "producers": ["insurance-service"],
+      "consumers": ["notification-service", "finance-service", "support-service", "analytics-service"],
+      "description": "Insurance claim status changed",
+      "retention_days": 2555
+    }
+  ]
+}

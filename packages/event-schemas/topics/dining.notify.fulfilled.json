@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "dining.notify.fulfilled",
+  "description": "Emitted when a dining notification request is fulfilled (slot matched or expired)",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": ["notify_id", "restaurant_id", "user_id", "party_size", "target_date", "matched_slot", "priority_level", "action"],
+      "properties": {
+        "notify_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the notification request"
+        },
+        "restaurant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Restaurant the user was watching"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who set up the notification"
+        },
+        "party_size": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Requested party size"
+        },
+        "target_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Target date for the dining reservation"
+        },
+        "matched_slot": {
+          "type": "object",
+          "description": "The matched dining slot details",
+          "required": ["dining_slot_id", "start_at", "duration_min"],
+          "properties": {
+            "dining_slot_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the matched dining slot"
+            },
+            "start_at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Start time of the matched slot"
+            },
+            "duration_min": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Duration of the dining slot in minutes"
+            }
+          }
+        },
+        "priority_level": {
+          "type": "string",
+          "description": "Priority tier of the notification"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["notified", "auto_reserved", "expired"],
+          "description": "Action taken when the slot was matched"
+        }
+      }
+    }
+  }
+}

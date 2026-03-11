@@ -1,0 +1,12 @@
+{
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "import/no-unresolved": "off",
+    "import/no-cycle": "off",
+    "import/namespace": "off",
+    "import/order": "off",
+    "import/no-duplicates": "off",
+    "import/no-self-import": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }]
+  }
+}

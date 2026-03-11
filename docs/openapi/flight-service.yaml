@@ -1,0 +1,1245 @@
+openapi: 3.1.0
+info:
+  title: Atlas One - Flight Service API
+  description: |
+    Provides flight search, booking, ticketing, seat selection, disruption
+    management, and auto-rebooking capabilities for the Atlas One platform.
+  version: 1.0.0
+  contact:
+    name: Atlas One API Support
+    email: api-support@atlasone.com
+
+servers:
+  - url: https://api.atlasone.com/v1/flights
+    description: Production
+  - url: https://api.staging.atlasone.com/v1/flights
+    description: Staging
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Search
+    description: Flight offer search
+  - name: Offers
+    description: Offer retrieval before booking
+  - name: Booking
+    description: Flight booking and ticketing
+  - name: Tickets
+    description: Ticket management and lifecycle
+  - name: Changes
+    description: Ticket changes and cancellations
+  - name: Seats
+    description: Seat maps and selection
+  - name: Disruptions
+    description: Disruption alerts and rebooking
+  - name: Reference Data
+    description: Airports, airlines, and preferences
+
+paths:
+  # ── Search ─────────────────────────────────────────────────────────────
+  /search:
+    post:
+      operationId: searchFlights
+      tags: [Search]
+      summary: Search flights
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlightSearchRequest'
+      responses:
+        '200':
+          description: Flight offers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FlightOffer'
+                  search_id:
+                    type: string
+                    format: uuid
+                    description: Reference for this search session
+                  metadata:
+                    type: object
+                    properties:
+                      total_offers:
+                        type: integer
+                      cheapest_price:
+                        type: number
+                        format: double
+                      fastest_duration_minutes:
+                        type: integer
+                      currency:
+                        type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── Offers ─────────────────────────────────────────────────────────────
+  /offers/{offerId}:
+    parameters:
+      - $ref: '#/components/parameters/OfferId'
+
+    get:
+      operationId: getOffer
+      tags: [Offers]
+      summary: Get offer details before expiry
+      description: |
+        Retrieves a specific flight offer. Offers expire after a set TTL
+        (typically 15-30 minutes). Once expired, a new search must be performed.
+      responses:
+        '200':
+          description: Offer detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlightOffer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: Offer has expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── Booking ────────────────────────────────────────────────────────────
+  /book:
+    post:
+      operationId: bookFlight
+      tags: [Booking]
+      summary: Book flight from offer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlightBookRequest'
+      responses:
+        '201':
+          description: Ticket created with PNR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlightTicket'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Offer no longer available or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  # ── Tickets ────────────────────────────────────────────────────────────
+  /tickets:
+    get:
+      operationId: listTickets
+      tags: [Tickets]
+      summary: List user's tickets
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [confirmed, ticketed, checked_in, completed, cancelled, changed]
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paginated ticket list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FlightTicket'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tickets/{ticketId}:
+    parameters:
+      - $ref: '#/components/parameters/TicketId'
+
+    get:
+      operationId: getTicket
+      tags: [Tickets]
+      summary: Get ticket details with segments
+      responses:
+        '200':
+          description: Ticket detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlightTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Changes & Cancellations ────────────────────────────────────────────
+  /tickets/{ticketId}/change:
+    parameters:
+      - $ref: '#/components/parameters/TicketId'
+
+    post:
+      operationId: requestChange
+      tags: [Changes]
+      summary: Request ticket change
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketChangeRequest'
+      responses:
+        '200':
+          description: Change processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  change_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [processing, confirmed, requires_fare_difference]
+                  fare_difference:
+                    type: number
+                    format: double
+                    nullable: true
+                  currency:
+                    type: string
+                  updated_ticket:
+                    $ref: '#/components/schemas/FlightTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Ticket cannot be changed in current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tickets/{ticketId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/TicketId'
+
+    post:
+      operationId: cancelTicket
+      tags: [Changes]
+      summary: Request cancellation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '200':
+          description: Cancellation processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cancellation_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [cancelled, pending_refund]
+                  refund_amount:
+                    type: number
+                    format: double
+                  refund_currency:
+                    type: string
+                  penalty_amount:
+                    type: number
+                    format: double
+                  ticket:
+                    $ref: '#/components/schemas/FlightTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Ticket cannot be cancelled in current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── Seat Maps & Selection ──────────────────────────────────────────────
+  /tickets/{ticketId}/seat-map:
+    parameters:
+      - $ref: '#/components/parameters/TicketId'
+
+    get:
+      operationId: getSeatMap
+      tags: [Seats]
+      summary: Get seat map for ticket's aircraft
+      parameters:
+        - name: segment_index
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+          description: Index of the segment to get the seat map for (defaults to 0)
+      responses:
+        '200':
+          description: Seat map
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeatMap'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tickets/{ticketId}/seat-selection:
+    parameters:
+      - $ref: '#/components/parameters/TicketId'
+
+    post:
+      operationId: selectSeats
+      tags: [Seats]
+      summary: Select seats
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [selections]
+              properties:
+                selections:
+                  type: array
+                  items:
+                    type: object
+                    required: [segment_index, seat_number]
+                    properties:
+                      segment_index:
+                        type: integer
+                        minimum: 0
+                      seat_number:
+                        type: string
+                        examples: ['12A']
+                      passenger_index:
+                        type: integer
+                        minimum: 0
+                        description: Index of the passenger in the booking (defaults to 0)
+                  minItems: 1
+      responses:
+        '200':
+          description: Seats selected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  selections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        segment_index:
+                          type: integer
+                        seat_number:
+                          type: string
+                        passenger_index:
+                          type: integer
+                        additional_cost:
+                          type: number
+                          format: double
+                        currency:
+                          type: string
+                  total_additional_cost:
+                    type: number
+                    format: double
+                  currency:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: One or more seats unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── Disruptions & Rebooking ────────────────────────────────────────────
+  /tickets/{ticketId}/disruptions:
+    parameters:
+      - $ref: '#/components/parameters/TicketId'
+
+    get:
+      operationId: getDisruptions
+      tags: [Disruptions]
+      summary: Get disruption alerts for ticket
+      responses:
+        '200':
+          description: Disruption alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FlightDisruption'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tickets/{ticketId}/rebook:
+    parameters:
+      - $ref: '#/components/parameters/TicketId'
+
+    post:
+      operationId: requestRebook
+      tags: [Disruptions]
+      summary: Request auto-rebooking triggered by disruption
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                disruption_id:
+                  type: string
+                  format: uuid
+                  description: Reference to the disruption triggering rebooking
+                preference:
+                  type: string
+                  enum: [earliest, same_cabin, cheapest]
+                  default: earliest
+      responses:
+        '200':
+          description: Rebooking processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rebook_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [rebooked, pending_confirmation, no_alternatives]
+                  new_ticket:
+                    $ref: '#/components/schemas/FlightTicket'
+                  alternatives:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FlightOffer'
+                    description: Available alternatives if auto-rebook could not confirm
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: No active disruption or ticket not eligible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── Reference Data ─────────────────────────────────────────────────────
+  /airports:
+    get:
+      operationId: searchAirports
+      tags: [Reference Data]
+      summary: Search airports
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Search by name, city, or IATA code
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: Airport results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Airport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /airlines:
+    get:
+      operationId: listAirlines
+      tags: [Reference Data]
+      summary: List airlines
+      parameters:
+        - name: alliance
+          in: query
+          schema:
+            type: string
+            enum: [star_alliance, oneworld, skyteam]
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Airline list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Airline'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+
+  /seat-preferences:
+    get:
+      operationId: getSeatPreferences
+      tags: [Reference Data]
+      summary: Get user's seat preferences
+      responses:
+        '200':
+          description: Seat preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeatPreference'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      operationId: setSeatPreferences
+      tags: [Reference Data]
+      summary: Set seat preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeatPreference'
+      responses:
+        '200':
+          description: Preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeatPreference'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    OfferId:
+      name: offerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    TicketId:
+      name: ticketId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableEntity:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # ── Common ───────────────────────────────────────────────────────────
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              examples: ['OFFER_EXPIRED']
+            message:
+              type: string
+              examples: ['The selected offer has expired. Please search again.']
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  reason:
+                    type: string
+
+    Cursor:
+      type: object
+      properties:
+        next:
+          type: string
+          nullable: true
+        prev:
+          type: string
+          nullable: true
+
+    # ── Search ───────────────────────────────────────────────────────────
+    FlightSearchRequest:
+      type: object
+      required: [origin, destination, departure_date, passengers]
+      properties:
+        origin:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: IATA airport code
+          examples: ['JFK']
+        destination:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: IATA airport code
+          examples: ['LHR']
+        departure_date:
+          type: string
+          format: date
+        return_date:
+          type: string
+          format: date
+          nullable: true
+          description: Required for round-trip; omit for one-way
+        passengers:
+          type: object
+          required: [adults]
+          properties:
+            adults:
+              type: integer
+              minimum: 1
+              maximum: 9
+            children:
+              type: integer
+              minimum: 0
+              maximum: 8
+              default: 0
+            infants:
+              type: integer
+              minimum: 0
+              maximum: 4
+              default: 0
+        cabin_class:
+          type: string
+          enum: [economy, premium_economy, business, first]
+          default: economy
+        one_way:
+          type: boolean
+          default: false
+        flexible_dates:
+          type: boolean
+          default: false
+          description: Search +/- 3 days around departure date
+
+    # ── Flight Offer ─────────────────────────────────────────────────────
+    FlightOffer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        search_id:
+          type: string
+          format: uuid
+        outbound_segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlightSegment'
+        return_segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlightSegment'
+          nullable: true
+        total_price:
+          type: number
+          format: double
+        base_fare:
+          type: number
+          format: double
+        taxes_and_fees:
+          type: number
+          format: double
+        currency:
+          type: string
+          examples: ['USD']
+        cabin_class:
+          type: string
+          enum: [economy, premium_economy, business, first]
+        baggage_allowance:
+          type: object
+          properties:
+            cabin:
+              type: object
+              properties:
+                pieces:
+                  type: integer
+                weight_kg:
+                  type: number
+            checked:
+              type: object
+              properties:
+                pieces:
+                  type: integer
+                weight_kg:
+                  type: number
+        refundable:
+          type: boolean
+        changeable:
+          type: boolean
+        change_fee:
+          type: number
+          format: double
+          nullable: true
+        total_duration_minutes:
+          type: integer
+          description: Total outbound journey time in minutes
+        stops:
+          type: integer
+          description: Number of stops on outbound journey
+        airline_name:
+          type: string
+          description: Marketing airline name
+        airline_code:
+          type: string
+          description: Marketing airline IATA code
+        expires_at:
+          type: string
+          format: date-time
+          description: Offer expiration timestamp
+
+    FlightSegment:
+      type: object
+      properties:
+        segment_index:
+          type: integer
+        departure_airport:
+          type: string
+          description: IATA code
+        arrival_airport:
+          type: string
+          description: IATA code
+        departure_time:
+          type: string
+          format: date-time
+        arrival_time:
+          type: string
+          format: date-time
+        duration_minutes:
+          type: integer
+        marketing_airline:
+          type: string
+          description: IATA airline code
+        operating_airline:
+          type: string
+          description: IATA airline code
+        flight_number:
+          type: string
+          examples: ['BA117']
+        aircraft_type:
+          type: string
+          examples: ['Boeing 777-300ER']
+        cabin_class:
+          type: string
+          enum: [economy, premium_economy, business, first]
+        booking_class:
+          type: string
+          description: Fare class letter
+          examples: ['Y']
+        seats_remaining:
+          type: integer
+          nullable: true
+          description: Number of seats at this fare, if known
+
+    # ── Booking ──────────────────────────────────────────────────────────
+    FlightBookRequest:
+      type: object
+      required: [offer_id, passengers, payment_method_id]
+      properties:
+        offer_id:
+          type: string
+          format: uuid
+        passengers:
+          type: array
+          items:
+            type: object
+            required: [first_name, last_name, date_of_birth, gender]
+            properties:
+              first_name:
+                type: string
+              last_name:
+                type: string
+              date_of_birth:
+                type: string
+                format: date
+              gender:
+                type: string
+                enum: [male, female]
+              passport_number:
+                type: string
+                nullable: true
+              passport_country:
+                type: string
+                nullable: true
+                description: ISO 3166-1 alpha-2
+              passport_expiry:
+                type: string
+                format: date
+                nullable: true
+              frequent_flyer_number:
+                type: string
+                nullable: true
+              frequent_flyer_airline:
+                type: string
+                nullable: true
+                description: IATA airline code
+          minItems: 1
+        payment_method_id:
+          type: string
+          format: uuid
+        contact_email:
+          type: string
+          format: email
+        contact_phone:
+          type: string
+
+    # ── Ticket ───────────────────────────────────────────────────────────
+    FlightTicket:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        pnr:
+          type: string
+          description: Passenger Name Record (booking reference)
+          examples: ['ABC123']
+        user_id:
+          type: string
+          format: uuid
+        offer_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - confirmed
+            - ticketed
+            - checked_in
+            - completed
+            - cancelled
+            - changed
+        passengers:
+          type: array
+          items:
+            type: object
+            properties:
+              first_name:
+                type: string
+              last_name:
+                type: string
+              ticket_number:
+                type: string
+                examples: ['125-1234567890']
+              seat_assignments:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    segment_index:
+                      type: integer
+                    seat_number:
+                      type: string
+        outbound_segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlightSegment'
+        return_segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlightSegment'
+          nullable: true
+        total_price:
+          type: number
+          format: double
+        currency:
+          type: string
+        cabin_class:
+          type: string
+          enum: [economy, premium_economy, business, first]
+        baggage_allowance:
+          type: object
+          properties:
+            cabin:
+              type: object
+              properties:
+                pieces:
+                  type: integer
+                weight_kg:
+                  type: number
+            checked:
+              type: object
+              properties:
+                pieces:
+                  type: integer
+                weight_kg:
+                  type: number
+        contact_email:
+          type: string
+          format: email
+        contact_phone:
+          type: string
+        booked_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TicketChangeRequest:
+      type: object
+      required: [new_segments]
+      properties:
+        new_segments:
+          type: array
+          items:
+            type: object
+            required: [segment_index]
+            properties:
+              segment_index:
+                type: integer
+                minimum: 0
+              new_departure_date:
+                type: string
+                format: date
+              new_flight_number:
+                type: string
+              new_cabin_class:
+                type: string
+                enum: [economy, premium_economy, business, first]
+          minItems: 1
+
+    # ── Seat Map ─────────────────────────────────────────────────────────
+    SeatMap:
+      type: object
+      properties:
+        segment_index:
+          type: integer
+        aircraft_type:
+          type: string
+        cabin_class:
+          type: string
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              row_number:
+                type: integer
+              seats:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    seat_number:
+                      type: string
+                      examples: ['12A']
+                    available:
+                      type: boolean
+                    position:
+                      type: string
+                      enum: [window, middle, aisle]
+                    features:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - extra_legroom
+                          - exit_row
+                          - bulkhead
+                          - wing
+                          - bassinet
+                          - power_outlet
+                          - no_recline
+                    price:
+                      type: number
+                      format: double
+                      nullable: true
+                      description: Additional cost for this seat, null if free
+                    currency:
+                      type: string
+        exit_rows:
+          type: array
+          items:
+            type: integer
+          description: Row numbers with exit doors
+
+    # ── Seat Preference ──────────────────────────────────────────────────
+    SeatPreference:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        position:
+          type: string
+          enum: [window, middle, aisle]
+          nullable: true
+        extra_legroom:
+          type: boolean
+          default: false
+        near_exit:
+          type: boolean
+          default: false
+        front_of_cabin:
+          type: boolean
+          default: false
+        avoid_middle:
+          type: boolean
+          default: true
+        notes:
+          type: string
+          maxLength: 500
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Disruption ───────────────────────────────────────────────────────
+    FlightDisruption:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ticket_id:
+          type: string
+          format: uuid
+        segment_index:
+          type: integer
+        type:
+          type: string
+          enum:
+            - delay
+            - cancellation
+            - schedule_change
+            - gate_change
+            - equipment_change
+            - diversion
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        title:
+          type: string
+          examples: ['Flight BA117 delayed by 2 hours']
+        description:
+          type: string
+        original_departure:
+          type: string
+          format: date-time
+        revised_departure:
+          type: string
+          format: date-time
+          nullable: true
+        original_arrival:
+          type: string
+          format: date-time
+        revised_arrival:
+          type: string
+          format: date-time
+          nullable: true
+        delay_minutes:
+          type: integer
+          nullable: true
+        gate_change:
+          type: object
+          nullable: true
+          properties:
+            old_gate:
+              type: string
+            new_gate:
+              type: string
+        rebook_eligible:
+          type: boolean
+          description: Whether auto-rebooking is available for this disruption
+        compensation_eligible:
+          type: boolean
+          description: Whether EU261 or similar compensation may apply
+        detected_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Reference Data ───────────────────────────────────────────────────
+    Airport:
+      type: object
+      properties:
+        iata_code:
+          type: string
+          examples: ['JFK']
+        icao_code:
+          type: string
+          examples: ['KJFK']
+        name:
+          type: string
+          examples: ['John F. Kennedy International Airport']
+        city:
+          type: string
+          examples: ['New York']
+        country:
+          type: string
+          examples: ['United States']
+        country_code:
+          type: string
+          examples: ['US']
+        timezone:
+          type: string
+          examples: ['America/New_York']
+        coordinates:
+          type: object
+          properties:
+            latitude:
+              type: number
+              format: double
+            longitude:
+              type: number
+              format: double
+
+    Airline:
+      type: object
+      properties:
+        iata_code:
+          type: string
+          examples: ['BA']
+        icao_code:
+          type: string
+          examples: ['BAW']
+        name:
+          type: string
+          examples: ['British Airways']
+        country_code:
+          type: string
+          examples: ['GB']
+        alliance:
+          type: string
+          enum: [star_alliance, oneworld, skyteam]
+          nullable: true
+        logo_url:
+          type: string
+          format: uri
+          nullable: true
+        active:
+          type: boolean

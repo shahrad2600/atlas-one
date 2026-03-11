@@ -1,0 +1,1365 @@
+openapi: 3.1.0
+info:
+  title: Atlas One - Commerce Orchestrator API
+  description: |
+    The Commerce Orchestrator manages the full purchase lifecycle for Atlas One:
+    shopping carts, order processing, reservations, refunds, and protection add-ons.
+    It sits between the consumer-facing Trip OS and the supplier-facing booking engines.
+  version: 1.0.0
+  contact:
+    name: Atlas One Platform Team
+    email: platform@atlasone.com
+
+servers:
+  - url: https://api.atlasone.com/v1/commerce
+    description: Production
+  - url: https://api.staging.atlasone.com/v1/commerce
+    description: Staging
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Carts
+    description: Shopping cart management
+  - name: Orders
+    description: Order lifecycle and history
+  - name: Reservations
+    description: Reservation management across all verticals
+  - name: Protections
+    description: Protection and insurance add-ons for reservations
+  - name: Refunds
+    description: Refund tracking
+
+paths:
+  # ──────────────────────────────────────────────
+  # Carts
+  # ──────────────────────────────────────────────
+  /carts:
+    post:
+      operationId: createCart
+      summary: Create a new shopping cart
+      tags: [Carts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trip_id:
+                  type: string
+                  format: uuid
+                  description: Optionally associate cart with a trip
+                currency:
+                  type: string
+                  pattern: "^[A-Z]{3}$"
+                  default: "USD"
+                  example: "USD"
+                metadata:
+                  type: object
+                  additionalProperties: true
+                  description: Arbitrary key-value pairs for client use
+      responses:
+        "201":
+          description: Cart created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /carts/{cartId}:
+    parameters:
+      - $ref: "#/components/parameters/CartId"
+
+    get:
+      operationId: getCart
+      summary: Get cart with all items and pricing
+      tags: [Carts]
+      responses:
+        "200":
+          description: Cart details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /carts/{cartId}/items:
+    parameters:
+      - $ref: "#/components/parameters/CartId"
+
+    post:
+      operationId: addCartItem
+      summary: Add an item to the cart
+      tags: [Carts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [product_id, slot_id, quantity, price, currency]
+              properties:
+                product_id:
+                  type: string
+                  format: uuid
+                  description: Reference to the bookable product (flight, hotel room, restaurant slot, etc.)
+                slot_id:
+                  type: string
+                  format: uuid
+                  description: Reference to the specific availability slot being reserved
+                product_type:
+                  type: string
+                  enum: [flight, hotel, dining, activity, transport, package]
+                  example: "dining"
+                quantity:
+                  type: integer
+                  minimum: 1
+                  maximum: 99
+                  example: 2
+                price:
+                  type: number
+                  format: double
+                  minimum: 0
+                  description: Unit price at time of add
+                  example: 150.00
+                currency:
+                  type: string
+                  pattern: "^[A-Z]{3}$"
+                  example: "USD"
+                traveler_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Travelers this item is for
+                details:
+                  type: object
+                  additionalProperties: true
+                  description: Product-specific metadata (e.g., cabin class, room type)
+                  example:
+                    party_size: 2
+                    special_requests: "Window table preferred"
+      responses:
+        "201":
+          description: Item added to cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Slot is no longer available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /carts/{cartId}/items/{itemId}:
+    parameters:
+      - $ref: "#/components/parameters/CartId"
+      - $ref: "#/components/parameters/CartItemId"
+
+    patch:
+      operationId: updateCartItem
+      summary: Update cart item quantity
+      tags: [Carts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quantity]
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  maximum: 99
+      responses:
+        "200":
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    delete:
+      operationId: removeCartItem
+      summary: Remove an item from the cart
+      tags: [Carts]
+      responses:
+        "204":
+          description: Item removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /carts/{cartId}/checkout:
+    parameters:
+      - $ref: "#/components/parameters/CartId"
+
+    post:
+      operationId: checkout
+      summary: Convert cart to order and process payment
+      tags: [Carts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [payment_method_id]
+              properties:
+                payment_method_id:
+                  type: string
+                  format: uuid
+                  description: Reference to a stored payment method from the payments service
+                billing_address:
+                  type: object
+                  properties:
+                    line1:
+                      type: string
+                    line2:
+                      type: string
+                    city:
+                      type: string
+                    state:
+                      type: string
+                    postal_code:
+                      type: string
+                    country:
+                      type: string
+                      pattern: "^[A-Z]{2}$"
+                promo_code:
+                  type: string
+                  description: Optional promotional code to apply
+                idempotency_key:
+                  type: string
+                  format: uuid
+                  description: Client-generated key to prevent duplicate orders
+      responses:
+        "201":
+          description: Order created and payment processing initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Cart has already been checked out or items are no longer available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Payment method invalid or cart is empty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Orders
+  # ──────────────────────────────────────────────
+  /orders:
+    get:
+      operationId: listOrders
+      summary: List user's orders
+      tags: [Orders]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, confirmed, partially_fulfilled, fulfilled, cancelled, refunded]
+        - name: trip_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/CursorParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [created_at, total_amount]
+            default: created_at
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        "200":
+          description: Paginated list of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, cursor, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Order"
+                  cursor:
+                    $ref: "#/components/schemas/Cursor"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /orders/{orderId}:
+    parameters:
+      - $ref: "#/components/parameters/OrderId"
+
+    get:
+      operationId: getOrder
+      summary: Get order details with reservations
+      tags: [Orders]
+      parameters:
+        - name: include
+          in: query
+          description: Comma-separated related resources to embed
+          schema:
+            type: string
+            example: "reservations,refunds"
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Order"
+                  - type: object
+                    properties:
+                      reservations:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Reservation"
+                      refunds:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Refund"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /orders/{orderId}/refund:
+    parameters:
+      - $ref: "#/components/parameters/OrderId"
+
+    post:
+      operationId: requestRefund
+      summary: Request a refund for an order or specific reservation
+      tags: [Orders]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reservation_id:
+                  type: string
+                  format: uuid
+                  description: Specific reservation to refund. If omitted, applies to the full order.
+                amount:
+                  type: number
+                  format: double
+                  minimum: 0.01
+                  description: Partial refund amount. If omitted, full refund is requested.
+                  example: 75.00
+                currency:
+                  type: string
+                  pattern: "^[A-Z]{3}$"
+                  example: "USD"
+                reason:
+                  type: string
+                  enum: [change_of_plans, duplicate, service_issue, supplier_cancelled, other]
+                  example: "change_of_plans"
+                reason_details:
+                  type: string
+                  maxLength: 2000
+                  description: Free-text explanation
+      responses:
+        "201":
+          description: Refund request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Refund"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: A refund is already in progress for this reservation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Amount exceeds refundable balance or reservation is non-refundable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Reservations
+  # ──────────────────────────────────────────────
+  /reservations:
+    get:
+      operationId: listReservations
+      summary: List user's reservations across all verticals
+      tags: [Reservations]
+      parameters:
+        - name: type
+          in: query
+          description: Filter by reservation type
+          schema:
+            type: string
+            enum: [flight, hotel, dining, activity, transport]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, confirmed, checked_in, completed, cancelled, no_show]
+        - name: trip_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: start_date
+          in: query
+          description: Filter reservations starting on or after this date
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: Filter reservations starting on or before this date
+          schema:
+            type: string
+            format: date
+        - $ref: "#/components/parameters/CursorParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: Paginated list of reservations
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, cursor, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Reservation"
+                  cursor:
+                    $ref: "#/components/schemas/Cursor"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /reservations/{reservationId}:
+    parameters:
+      - $ref: "#/components/parameters/ReservationId"
+
+    get:
+      operationId: getReservation
+      summary: Get reservation details
+      tags: [Reservations]
+      responses:
+        "200":
+          description: Reservation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      operationId: modifyReservation
+      summary: Modify a reservation
+      tags: [Reservations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                start_at:
+                  type: string
+                  format: date-time
+                  description: New start date/time
+                end_at:
+                  type: string
+                  format: date-time
+                  description: New end date/time
+                party_size:
+                  type: integer
+                  minimum: 1
+                  maximum: 99
+                special_requests:
+                  type: string
+                  maxLength: 2000
+                details:
+                  type: object
+                  additionalProperties: true
+                  description: Product-type-specific modification fields
+      responses:
+        "200":
+          description: Reservation modified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Requested slot is no longer available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Modification not allowed (e.g., past cancellation window)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /reservations/{reservationId}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/ReservationId"
+
+    post:
+      operationId: cancelReservation
+      summary: Cancel a reservation
+      tags: [Reservations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  enum: [change_of_plans, duplicate, found_alternative, supplier_issue, other]
+                  example: "change_of_plans"
+                reason_details:
+                  type: string
+                  maxLength: 2000
+      responses:
+        "200":
+          description: Reservation cancelled (includes cancellation fee details if applicable)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Reservation"
+                  - type: object
+                    properties:
+                      cancellation_fee:
+                        type: number
+                        format: double
+                        description: Fee charged for cancellation (0 if free cancellation)
+                      refund_amount:
+                        type: number
+                        format: double
+                        description: Amount to be refunded
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Reservation is already cancelled or completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Cancellation not permitted (e.g., non-refundable reservation past deadline)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Protections
+  # ──────────────────────────────────────────────
+  /reservations/{reservationId}/protections:
+    parameters:
+      - $ref: "#/components/parameters/ReservationId"
+
+    post:
+      operationId: addProtection
+      summary: Add a protection add-on to a reservation
+      tags: [Protections]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [addon_type, terms]
+              properties:
+                addon_type:
+                  type: string
+                  enum: [cancel_for_any_reason, trip_interruption, flight_delay, baggage_loss, medical, weather]
+                  example: "cancel_for_any_reason"
+                terms:
+                  type: object
+                  required: [accepted, version]
+                  description: Acceptance of protection terms and conditions
+                  properties:
+                    accepted:
+                      type: boolean
+                      description: Must be true to add protection
+                    version:
+                      type: string
+                      description: Version identifier of the terms accepted
+                      example: "cfar-v2.1"
+                    accepted_at:
+                      type: string
+                      format: date-time
+                payment_method_id:
+                  type: string
+                  format: uuid
+                  description: Payment method for the protection premium. Uses order payment method if omitted.
+      responses:
+        "201":
+          description: Protection add-on activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProtectionAddon"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: This protection type is already active on the reservation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Protection is not available for this reservation type or terms not accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      operationId: listProtections
+      summary: List protection add-ons on a reservation
+      tags: [Protections]
+      responses:
+        "200":
+          description: List of active protections
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProtectionAddon"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ──────────────────────────────────────────────
+  # Refunds
+  # ──────────────────────────────────────────────
+  /refunds/{refundId}:
+    parameters:
+      - $ref: "#/components/parameters/RefundId"
+
+    get:
+      operationId: getRefund
+      summary: Get refund status and details
+      tags: [Refunds]
+      responses:
+        "200":
+          description: Refund details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Refund"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from Atlas One Identity Service
+
+  parameters:
+    CartId:
+      name: cartId
+      in: path
+      required: true
+      description: Unique cart identifier
+      schema:
+        type: string
+        format: uuid
+
+    CartItemId:
+      name: itemId
+      in: path
+      required: true
+      description: Unique cart item identifier
+      schema:
+        type: string
+        format: uuid
+
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      description: Unique order identifier
+      schema:
+        type: string
+        format: uuid
+
+    ReservationId:
+      name: reservationId
+      in: path
+      required: true
+      description: Unique reservation identifier
+      schema:
+        type: string
+        format: uuid
+
+    RefundId:
+      name: refundId
+      in: path
+      required: true
+      description: Unique refund identifier
+      schema:
+        type: string
+        format: uuid
+
+    CursorParam:
+      name: cursor
+      in: query
+      description: Opaque cursor for pagination
+      schema:
+        type: string
+
+    LimitParam:
+      name: limit
+      in: query
+      description: Maximum number of items to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    # ── Core Models ──────────────────────────────
+
+    Cart:
+      type: object
+      required: [id, user_id, status, currency, items, subtotal, total, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        trip_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [open, checked_out, expired, abandoned]
+          example: "open"
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          example: "USD"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
+        item_count:
+          type: integer
+          minimum: 0
+        subtotal:
+          type: number
+          format: double
+          description: Sum of all item prices before taxes and fees
+          example: 300.00
+        taxes:
+          type: number
+          format: double
+          example: 27.00
+        fees:
+          type: number
+          format: double
+          example: 12.50
+        discount:
+          type: number
+          format: double
+          example: 0.00
+        total:
+          type: number
+          format: double
+          description: Final amount after taxes, fees, and discounts
+          example: 339.50
+        promo_code:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          description: Cart expiration time (slot holds expire)
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CartItem:
+      type: object
+      required: [id, cart_id, product_id, slot_id, product_type, quantity, unit_price, currency, line_total, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        cart_id:
+          type: string
+          format: uuid
+        product_id:
+          type: string
+          format: uuid
+        slot_id:
+          type: string
+          format: uuid
+        product_type:
+          type: string
+          enum: [flight, hotel, dining, activity, transport, package]
+          example: "dining"
+        product_name:
+          type: string
+          example: "Omakase Dinner - Sukiyabashi Jiro"
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        unit_price:
+          type: number
+          format: double
+          example: 150.00
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          example: "USD"
+        line_total:
+          type: number
+          format: double
+          description: unit_price * quantity
+          example: 300.00
+        traveler_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        details:
+          type: object
+          additionalProperties: true
+        slot_held_until:
+          type: string
+          format: date-time
+          description: When the availability hold on this slot expires
+        created_at:
+          type: string
+          format: date-time
+
+    Order:
+      type: object
+      required: [id, user_id, status, currency, subtotal, total, payment_status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        trip_id:
+          type: string
+          format: uuid
+        cart_id:
+          type: string
+          format: uuid
+          description: Source cart that produced this order
+        order_number:
+          type: string
+          description: Human-readable order number
+          example: "ATL-2026-0047291"
+        status:
+          type: string
+          enum: [pending, confirmed, partially_fulfilled, fulfilled, cancelled, refunded]
+          example: "confirmed"
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          example: "USD"
+        subtotal:
+          type: number
+          format: double
+          example: 300.00
+        taxes:
+          type: number
+          format: double
+          example: 27.00
+        fees:
+          type: number
+          format: double
+          example: 12.50
+        discount:
+          type: number
+          format: double
+          example: 0.00
+        total:
+          type: number
+          format: double
+          example: 339.50
+        payment_status:
+          type: string
+          enum: [pending, authorized, captured, partially_refunded, refunded, failed]
+          example: "captured"
+        payment_method_id:
+          type: string
+          format: uuid
+        reservation_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Reservations created from this order
+        refund_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        promo_code:
+          type: string
+        billing_address:
+          type: object
+          properties:
+            line1:
+              type: string
+            line2:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            postal_code:
+              type: string
+            country:
+              type: string
+        idempotency_key:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Reservation:
+      type: object
+      required: [id, user_id, order_id, type, status, supplier_id, start_at, currency, total_price, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        trip_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [flight, hotel, dining, activity, transport]
+          example: "dining"
+        status:
+          type: string
+          enum: [pending, confirmed, checked_in, completed, cancelled, no_show]
+          example: "confirmed"
+        supplier_id:
+          type: string
+          format: uuid
+          description: Supplier or venue that fulfills this reservation
+        supplier_confirmation_code:
+          type: string
+          description: Confirmation code from the supplier system
+          example: "RESY-8829174"
+        product_name:
+          type: string
+          example: "Omakase Dinner - Sukiyabashi Jiro"
+        start_at:
+          type: string
+          format: date-time
+          example: "2026-07-03T19:00:00+09:00"
+        end_at:
+          type: string
+          format: date-time
+          example: "2026-07-03T21:00:00+09:00"
+        party_size:
+          type: integer
+          minimum: 1
+          example: 2
+        traveler_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        special_requests:
+          type: string
+          maxLength: 2000
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          example: "USD"
+        total_price:
+          type: number
+          format: double
+          example: 300.00
+        cancellation_policy:
+          type: object
+          properties:
+            refundable:
+              type: boolean
+            free_cancellation_before:
+              type: string
+              format: date-time
+            cancellation_fee:
+              type: number
+              format: double
+            policy_text:
+              type: string
+        protection_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        details:
+          type: object
+          additionalProperties: true
+          description: Type-specific reservation details
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Refund:
+      type: object
+      required: [id, order_id, user_id, status, amount, currency, reason, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        reservation_id:
+          type: string
+          format: uuid
+          description: Specific reservation being refunded (null if full order refund)
+        user_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [requested, approved, processing, completed, denied]
+          example: "processing"
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          example: 75.00
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          example: "USD"
+        reason:
+          type: string
+          enum: [change_of_plans, duplicate, service_issue, supplier_cancelled, other]
+          example: "change_of_plans"
+        reason_details:
+          type: string
+        denial_reason:
+          type: string
+          description: Populated if status is denied
+        payment_method_id:
+          type: string
+          format: uuid
+          description: Payment method receiving the refund
+        estimated_completion:
+          type: string
+          format: date-time
+          description: Estimated date the refund will be credited
+        completed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProtectionAddon:
+      type: object
+      required: [id, reservation_id, addon_type, status, premium, currency, coverage_amount, terms_version, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        reservation_id:
+          type: string
+          format: uuid
+        addon_type:
+          type: string
+          enum: [cancel_for_any_reason, trip_interruption, flight_delay, baggage_loss, medical, weather]
+          example: "cancel_for_any_reason"
+        status:
+          type: string
+          enum: [active, claimed, expired, cancelled]
+          example: "active"
+        premium:
+          type: number
+          format: double
+          description: Price paid for this protection
+          example: 29.99
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          example: "USD"
+        coverage_amount:
+          type: number
+          format: double
+          description: Maximum coverage payout
+          example: 300.00
+        coverage_details:
+          type: string
+          description: Human-readable summary of what is covered
+        terms_version:
+          type: string
+          example: "cfar-v2.1"
+        effective_from:
+          type: string
+          format: date-time
+        effective_until:
+          type: string
+          format: date-time
+        claim_id:
+          type: string
+          format: uuid
+          description: Associated claim if protection has been invoked
+        created_at:
+          type: string
+          format: date-time
+
+    # ── Shared ───────────────────────────────────
+
+    Cursor:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Cursor to fetch the next page (null if no more results)
+        prev:
+          type: string
+          description: Cursor to fetch the previous page (null if on first page)
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              description: Human-readable error description
+              example: "Quantity must be at least 1"
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  reason:
+                    type: string
+                  value:
+                    description: The invalid value that was provided
+
+  responses:
+    BadRequest:
+      description: Invalid request syntax or malformed body
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "BAD_REQUEST"
+              message: "Request body could not be parsed"
+
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "UNAUTHORIZED"
+              message: "Bearer token is missing or expired"
+
+    Forbidden:
+      description: Authenticated user lacks permission for this action
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "FORBIDDEN"
+              message: "You do not have permission to access this resource"
+
+    NotFound:
+      description: Requested resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "NOT_FOUND"
+              message: "Resource not found"
+
+    UnprocessableEntity:
+      description: Request body is syntactically valid but semantically incorrect
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Validation failed"
+              details:
+                - field: "quantity"
+                  reason: "must be at least 1"
+                  value: 0

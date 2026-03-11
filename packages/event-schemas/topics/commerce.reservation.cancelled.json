@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "commerce.reservation.cancelled",
+  "description": "Emitted when a reservation is cancelled",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": ["reservation_id", "reservation_type", "user_id", "trip_id", "reason", "refund_amount", "refund_status", "cancelled_by"],
+      "properties": {
+        "reservation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier of the cancelled reservation"
+        },
+        "reservation_type": {
+          "type": "string",
+          "description": "Category of the reservation"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who held the reservation"
+        },
+        "trip_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Associated trip"
+        },
+        "reason": {
+          "type": "string",
+          "enum": ["user_request", "no_show", "disruption", "policy", "partner", "system"],
+          "description": "Reason for the cancellation"
+        },
+        "refund_amount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Amount to be refunded"
+        },
+        "refund_status": {
+          "type": "string",
+          "description": "Current status of the refund (e.g., pending, processed, denied)"
+        },
+        "protection_used": {
+          "type": ["string", "null"],
+          "description": "Protection add-on type used, if applicable (e.g., cancel_for_any_reason)"
+        },
+        "cancelled_by": {
+          "type": "string",
+          "enum": ["user", "partner", "system", "agent"],
+          "description": "Who initiated the cancellation"
+        }
+      }
+    }
+  }
+}

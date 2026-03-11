@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    /* Language & Environment */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": false,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "exactOptionalPropertyTypes": false,
+
+    /* Emit */
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+
+    /* Resolution */
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+
+    /* Path Aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@atlas/shared-types": ["packages/shared-types/src/index.ts"],
+      "@atlas/shared-types/*": ["packages/shared-types/src/*"],
+      "@atlas/database": ["packages/database/src/index.ts"],
+      "@atlas/database/*": ["packages/database/src/*"],
+      "@atlas/policy-engine": ["packages/policy-engine/src/index.ts"],
+      "@atlas/policy-engine/*": ["packages/policy-engine/src/*"],
+      "@atlas/event-schemas": ["packages/event-schemas/src/index.ts"],
+      "@atlas/event-schemas/*": ["packages/event-schemas/src/*"],
+      "@atlas/auth": ["packages/auth/src/index.ts"],
+      "@atlas/auth/*": ["packages/auth/src/*"],
+      "@atlas/validation": ["packages/validation/src/index.ts"],
+      "@atlas/validation/*": ["packages/validation/src/*"]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    ".next",
+    ".turbo",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/__tests__/**"
+  ]
+}

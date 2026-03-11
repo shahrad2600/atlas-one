@@ -1,0 +1,68 @@
+{
+  "name": "atlas-one",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Atlas One — Enterprise AI-powered travel super-platform",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20.11.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm run --parallel --recursive --stream dev",
+    "dev:apps": "pnpm run --filter './apps/**' --parallel --stream dev",
+    "dev:services": "pnpm run --filter './services/**' --parallel --stream dev",
+    "build": "pnpm run --recursive --stream build",
+    "build:apps": "pnpm run --filter './apps/**' --stream build",
+    "build:services": "pnpm run --filter './services/**' --stream build",
+    "build:packages": "pnpm run --filter './packages/**' --stream build",
+    "test": "pnpm run --recursive --stream test",
+    "test:unit": "pnpm run --recursive --stream test:unit",
+    "test:integration": "pnpm run --recursive --stream test:integration",
+    "test:coverage": "pnpm run --recursive --stream test:coverage",
+    "lint": "pnpm run --recursive --stream lint",
+    "lint:fix": "pnpm run --recursive --stream lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
+    "typecheck": "pnpm run --recursive --stream typecheck",
+    "migrate": "pnpm run --filter '@atlas/database' migrate",
+    "migrate:create": "pnpm run --filter '@atlas/database' migrate:create",
+    "migrate:rollback": "pnpm run --filter '@atlas/database' migrate:rollback",
+    "migrate:status": "pnpm run --filter '@atlas/database' migrate:status",
+    "seed": "pnpm run --filter '@atlas/database' seed",
+    "seed:reset": "pnpm run --filter '@atlas/database' seed:reset",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:reset": "docker compose down -v && docker compose up -d",
+    "bootstrap": "bash scripts/bootstrap.sh",
+    "clean": "pnpm run --recursive --stream clean && rimraf node_modules",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "dotenv": "^17.3.1",
+    "eslint": "^9.16.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "prettier": "^3.4.2",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "zod": "^3.23.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yaml,yml}": [
+      "prettier --write"
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "trip.created",
+  "description": "Emitted when a new trip is created by a user or AI agent",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": ["trip_id", "user_id", "title", "start_date", "end_date", "traveler_count", "source"],
+      "properties": {
+        "trip_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the trip"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who owns the trip"
+        },
+        "title": {
+          "type": "string",
+          "description": "Display title of the trip"
+        },
+        "start_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Trip start date (ISO 8601 date)"
+        },
+        "end_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Trip end date (ISO 8601 date)"
+        },
+        "traveler_count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of travelers on the trip"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["manual", "ai", "import"],
+          "description": "How the trip was created"
+        }
+      }
+    }
+  }
+}

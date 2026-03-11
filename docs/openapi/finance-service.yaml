@@ -1,0 +1,1160 @@
+openapi: 3.1.0
+info:
+  title: Atlas One - Embedded Finance Service API
+  description: |
+    Provides wallet management, escrow holds, price-freeze contracts,
+    buy-now-pay-later plans, and partner payout tracking for the
+    Atlas One platform.
+  version: 1.0.0
+  contact:
+    name: Atlas One API Support
+    email: api-support@atlasone.com
+
+servers:
+  - url: https://api.atlasone.com/v1/finance
+    description: Production
+  - url: https://api.staging.atlasone.com/v1/finance
+    description: Staging
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Wallet
+    description: User wallet and ledger
+  - name: Escrow
+    description: Escrow hold management
+  - name: Price Freeze
+    description: Price-freeze contract lifecycle
+  - name: BNPL
+    description: Buy-now-pay-later plans
+  - name: Payouts
+    description: Partner/supplier payout tracking
+
+paths:
+  # ── Wallet ─────────────────────────────────────────────────────────────
+  /wallet:
+    get:
+      operationId: getWallet
+      tags: [Wallet]
+      summary: Get user's wallet balance
+      responses:
+        '200':
+          description: Wallet balances
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /wallet/ledger:
+    get:
+      operationId: getLedger
+      tags: [Wallet]
+      summary: Get ledger entries
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum:
+              - credit
+              - debit
+              - hold
+              - release
+              - refund
+              - payout
+              - fee
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paginated ledger entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LedgerEntry'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── Escrow ─────────────────────────────────────────────────────────────
+  /escrow:
+    post:
+      operationId: createEscrow
+      tags: [Escrow]
+      summary: Create escrow hold
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEscrowRequest'
+      responses:
+        '201':
+          description: Escrow hold created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Escrow'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /escrow/{escrowId}:
+    parameters:
+      - $ref: '#/components/parameters/EscrowId'
+
+    get:
+      operationId: getEscrow
+      tags: [Escrow]
+      summary: Get escrow status
+      responses:
+        '200':
+          description: Escrow detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Escrow'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /escrow/{escrowId}/release:
+    parameters:
+      - $ref: '#/components/parameters/EscrowId'
+
+    post:
+      operationId: releaseEscrow
+      tags: [Escrow]
+      summary: Release escrow (partial or full)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                  format: double
+                  nullable: true
+                  description: Amount to release. Omit for full release.
+                  minimum: 0.01
+                release_to:
+                  type: string
+                  format: uuid
+                  description: Recipient user/supplier ID
+                note:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '200':
+          description: Escrow released
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Escrow'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Escrow not in a releasable state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /escrow/{escrowId}/dispute:
+    parameters:
+      - $ref: '#/components/parameters/EscrowId'
+
+    post:
+      operationId: disputeEscrow
+      tags: [Escrow]
+      summary: Dispute escrow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  minLength: 10
+                  maxLength: 5000
+                evidence:
+                  type: array
+                  items:
+                    type: object
+                    required: [type, url]
+                    properties:
+                      type:
+                        type: string
+                        enum: [screenshot, receipt, correspondence, other]
+                      url:
+                        type: string
+                        format: uri
+                      description:
+                        type: string
+      responses:
+        '200':
+          description: Dispute filed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Escrow'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Escrow not in a disputable state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── Price Freeze ───────────────────────────────────────────────────────
+  /price-freeze:
+    post:
+      operationId: createPriceFreeze
+      tags: [Price Freeze]
+      summary: Create price freeze contract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePriceFreezeRequest'
+      responses:
+        '201':
+          description: Price freeze created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceFreezeContract'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    get:
+      operationId: listPriceFreezes
+      tags: [Price Freeze]
+      summary: List user's active price freezes
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, exercised, expired, cancelled]
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paginated price freeze list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PriceFreezeContract'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /price-freeze/{freezeId}:
+    parameters:
+      - $ref: '#/components/parameters/FreezeId'
+
+    get:
+      operationId: getPriceFreeze
+      tags: [Price Freeze]
+      summary: Get freeze status
+      responses:
+        '200':
+          description: Price freeze detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceFreezeContract'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /price-freeze/{freezeId}/exercise:
+    parameters:
+      - $ref: '#/components/parameters/FreezeId'
+
+    post:
+      operationId: exercisePriceFreeze
+      tags: [Price Freeze]
+      summary: Exercise freeze (book at locked price)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payment_method_id:
+                  type: string
+                  format: uuid
+                  description: Payment method for the remaining balance
+      responses:
+        '200':
+          description: Freeze exercised, booking initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  freeze:
+                    $ref: '#/components/schemas/PriceFreezeContract'
+                  booking_reference_id:
+                    type: string
+                    format: uuid
+                    description: ID of the created booking/reservation
+                  amount_charged:
+                    type: number
+                    format: double
+                  savings:
+                    type: number
+                    format: double
+                    description: Difference between current market price and locked price
+                  currency:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Freeze expired or already exercised
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── BNPL ───────────────────────────────────────────────────────────────
+  /bnpl/apply:
+    post:
+      operationId: applyBnpl
+      tags: [BNPL]
+      summary: Apply for buy-now-pay-later
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BnplApplyRequest'
+      responses:
+        '201':
+          description: BNPL plan created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BnplPlan'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Application denied or order already has BNPL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                  denial_reason:
+                    type: string
+                    nullable: true
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /bnpl:
+    get:
+      operationId: listBnplPlans
+      tags: [BNPL]
+      summary: List user's BNPL plans
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, completed, defaulted, cancelled]
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paginated BNPL plan list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BnplPlan'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /bnpl/{bnplId}:
+    parameters:
+      - name: bnplId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      operationId: getBnplPlan
+      tags: [BNPL]
+      summary: Get BNPL plan with payment schedule
+      responses:
+        '200':
+          description: BNPL plan detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BnplPlan'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Payouts ────────────────────────────────────────────────────────────
+  /payouts:
+    get:
+      operationId: listPayouts
+      tags: [Payouts]
+      summary: List partner payouts (supplier view)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed]
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paginated payout list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payout'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /payouts/{payoutId}:
+    parameters:
+      - name: payoutId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      operationId: getPayout
+      tags: [Payouts]
+      summary: Get payout details
+      responses:
+        '200':
+          description: Payout detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payout'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    EscrowId:
+      name: escrowId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    FreezeId:
+      name: freezeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableEntity:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # ── Common ───────────────────────────────────────────────────────────
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              examples: ['INSUFFICIENT_FUNDS']
+            message:
+              type: string
+              examples: ['Wallet balance is insufficient for this operation.']
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  reason:
+                    type: string
+
+    Cursor:
+      type: object
+      properties:
+        next:
+          type: string
+          nullable: true
+        prev:
+          type: string
+          nullable: true
+
+    # ── Wallet ───────────────────────────────────────────────────────────
+    Wallet:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        balances:
+          type: array
+          items:
+            type: object
+            properties:
+              currency:
+                type: string
+                examples: ['USD']
+              available:
+                type: number
+                format: double
+                description: Spendable balance
+              held:
+                type: number
+                format: double
+                description: Amount held in escrow or pending
+              total:
+                type: number
+                format: double
+                description: available + held
+        updated_at:
+          type: string
+          format: date-time
+
+    LedgerEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        wallet_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+            - credit
+            - debit
+            - hold
+            - release
+            - refund
+            - payout
+            - fee
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        balance_after:
+          type: number
+          format: double
+          description: Wallet available balance after this entry
+        description:
+          type: string
+          examples: ['Escrow hold for reservation RSV-12345']
+        reference_type:
+          type: string
+          enum:
+            - reservation
+            - escrow
+            - price_freeze
+            - bnpl_payment
+            - refund
+            - payout
+            - fee
+            - manual_adjustment
+          nullable: true
+        reference_id:
+          type: string
+          format: uuid
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+
+    # ── Escrow ───────────────────────────────────────────────────────────
+    CreateEscrowRequest:
+      type: object
+      required: [reservation_id, amount, currency]
+      properties:
+        reservation_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        release_conditions:
+          type: array
+          items:
+            type: object
+            properties:
+              condition:
+                type: string
+                enum:
+                  - check_in_confirmed
+                  - check_out_confirmed
+                  - service_completed
+                  - no_dispute_period_elapsed
+                  - manual_release
+              release_percent:
+                type: number
+                format: double
+                minimum: 0
+                maximum: 100
+              description:
+                type: string
+          description: Conditions under which funds are released to the supplier
+
+    Escrow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reservation_id:
+          type: string
+          format: uuid
+        payer_id:
+          type: string
+          format: uuid
+        payee_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        released_amount:
+          type: number
+          format: double
+        disputed_amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+            - held
+            - partially_released
+            - released
+            - disputed
+            - refunded
+            - cancelled
+        release_conditions:
+          type: array
+          items:
+            type: object
+            properties:
+              condition:
+                type: string
+              release_percent:
+                type: number
+                format: double
+              met:
+                type: boolean
+              met_at:
+                type: string
+                format: date-time
+                nullable: true
+        dispute:
+          type: object
+          nullable: true
+          properties:
+            reason:
+              type: string
+            status:
+              type: string
+              enum: [open, resolved_payer, resolved_payee, escalated]
+            filed_at:
+              type: string
+              format: date-time
+            resolved_at:
+              type: string
+              format: date-time
+              nullable: true
+        releases:
+          type: array
+          items:
+            type: object
+            properties:
+              amount:
+                type: number
+                format: double
+              released_to:
+                type: string
+                format: uuid
+              note:
+                type: string
+              released_at:
+                type: string
+                format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Price Freeze ─────────────────────────────────────────────────────
+    CreatePriceFreezeRequest:
+      type: object
+      required: [offer_type, offer_ref_id, fee, locked_price]
+      properties:
+        offer_type:
+          type: string
+          enum: [flight, stay, package]
+          description: Type of offer being frozen
+        offer_ref_id:
+          type: string
+          format: uuid
+          description: Reference to the flight offer, stay rate plan, or package
+        fee:
+          type: number
+          format: double
+          minimum: 0.01
+          description: Non-refundable fee paid to freeze the price
+        locked_price:
+          type: number
+          format: double
+          minimum: 0.01
+          description: The price being locked in
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          default: USD
+        freeze_duration_hours:
+          type: integer
+          minimum: 1
+          maximum: 168
+          default: 48
+          description: How long the price is frozen (max 7 days)
+        payment_method_id:
+          type: string
+          format: uuid
+          description: Payment method for the freeze fee
+
+    PriceFreezeContract:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        offer_type:
+          type: string
+          enum: [flight, stay, package]
+        offer_ref_id:
+          type: string
+          format: uuid
+        fee:
+          type: number
+          format: double
+        locked_price:
+          type: number
+          format: double
+        current_market_price:
+          type: number
+          format: double
+          nullable: true
+          description: Current market price for comparison (updated periodically)
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - exercised
+            - expired
+            - cancelled
+        offer_summary:
+          type: object
+          description: Snapshot of the offer details at freeze time
+          additionalProperties: true
+        frozen_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        exercised_at:
+          type: string
+          format: date-time
+          nullable: true
+        booking_reference_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Booking created when freeze is exercised
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── BNPL ─────────────────────────────────────────────────────────────
+    BnplApplyRequest:
+      type: object
+      required: [order_id]
+      properties:
+        order_id:
+          type: string
+          format: uuid
+          description: The booking/reservation to finance
+        provider_preference:
+          type: string
+          enum: [affirm, klarna, afterpay, no_preference]
+          default: no_preference
+        installment_preference:
+          type: integer
+          enum: [3, 4, 6, 12]
+          nullable: true
+          description: Preferred number of installments
+
+    BnplPlan:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [affirm, klarna, afterpay]
+        status:
+          type: string
+          enum:
+            - active
+            - completed
+            - defaulted
+            - cancelled
+        total_amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        installments_count:
+          type: integer
+        installment_amount:
+          type: number
+          format: double
+        interest_rate:
+          type: number
+          format: double
+          description: Annual percentage rate (0 for interest-free)
+        total_interest:
+          type: number
+          format: double
+        schedule:
+          type: array
+          items:
+            type: object
+            properties:
+              installment_number:
+                type: integer
+              amount:
+                type: number
+                format: double
+              principal:
+                type: number
+                format: double
+              interest:
+                type: number
+                format: double
+              due_date:
+                type: string
+                format: date
+              status:
+                type: string
+                enum: [upcoming, paid, overdue, cancelled]
+              paid_at:
+                type: string
+                format: date-time
+                nullable: true
+        next_payment_date:
+          type: string
+          format: date
+          nullable: true
+        next_payment_amount:
+          type: number
+          format: double
+          nullable: true
+        paid_amount:
+          type: number
+          format: double
+        remaining_amount:
+          type: number
+          format: double
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Payout ───────────────────────────────────────────────────────────
+    Payout:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        supplier_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+        payout_method:
+          type: string
+          enum: [bank_transfer, paypal, stripe_connect]
+        period_start:
+          type: string
+          format: date
+          description: Start of the payout period
+        period_end:
+          type: string
+          format: date
+          description: End of the payout period
+        line_items:
+          type: array
+          items:
+            type: object
+            properties:
+              reservation_id:
+                type: string
+                format: uuid
+              description:
+                type: string
+              gross_amount:
+                type: number
+                format: double
+              commission:
+                type: number
+                format: double
+              net_amount:
+                type: number
+                format: double
+        total_gross:
+          type: number
+          format: double
+        total_commission:
+          type: number
+          format: double
+        total_net:
+          type: number
+          format: double
+        bank_reference:
+          type: string
+          nullable: true
+          description: Bank transaction reference once completed
+        failure_reason:
+          type: string
+          nullable: true
+        scheduled_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time

@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "search.impression.logged",
+  "description": "Emitted when search results are displayed to a user",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": ["user_id", "query", "results", "result_count", "context"],
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who performed the search"
+        },
+        "query": {
+          "type": "string",
+          "description": "Raw search query string"
+        },
+        "filters": {
+          "type": "object",
+          "description": "Applied search filters (e.g., date range, category, price)"
+        },
+        "results": {
+          "type": "array",
+          "description": "Ordered list of search results shown",
+          "items": {
+            "type": "object",
+            "required": ["entity_id", "rank", "score"],
+            "properties": {
+              "entity_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Entity identifier for the result"
+              },
+              "rank": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Position in the result list"
+              },
+              "score": {
+                "type": "number",
+                "description": "Relevance score from the search engine"
+              },
+              "sponsored": {
+                "type": "boolean",
+                "description": "Whether this result is a sponsored placement"
+              }
+            }
+          }
+        },
+        "result_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of results returned"
+        },
+        "context": {
+          "type": "object",
+          "description": "Contextual information about the search",
+          "properties": {
+            "place_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Geographic context for the search"
+            },
+            "device": {
+              "type": "string",
+              "description": "Device type (e.g., mobile, desktop, tablet)"
+            },
+            "session_id": {
+              "type": "string",
+              "description": "Session identifier for grouping user actions"
+            }
+          }
+        }
+      }
+    }
+  }
+}

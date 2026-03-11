@@ -1,0 +1,1388 @@
+openapi: 3.1.0
+info:
+  title: Atlas One - Trip OS Service API
+  description: |
+    The Trip OS Service is the core orchestration layer for Atlas One trips.
+    It manages trip lifecycle, travelers, itineraries, collaborators, budgets,
+    and trip health scoring. All trip-related state flows through this service.
+  version: 1.0.0
+  contact:
+    name: Atlas One Platform Team
+    email: platform@atlasone.com
+
+servers:
+  - url: https://api.atlasone.com/v1/trip-os
+    description: Production
+  - url: https://api.staging.atlasone.com/v1/trip-os
+    description: Staging
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Trips
+    description: Trip lifecycle management
+  - name: Travelers
+    description: Manage travelers within a trip
+  - name: Itinerary
+    description: Build and manage trip itineraries
+  - name: Collaborators
+    description: Trip sharing and collaboration
+  - name: Budget
+    description: Trip budget tracking
+  - name: Health
+    description: Trip health score and signals
+
+paths:
+  # ──────────────────────────────────────────────
+  # Trips
+  # ──────────────────────────────────────────────
+  /trips:
+    post:
+      operationId: createTrip
+      summary: Create a new trip
+      tags: [Trips]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, start_date, end_date, home_currency]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                  example: "Summer in Tokyo"
+                start_date:
+                  type: string
+                  format: date
+                  example: "2026-07-01"
+                end_date:
+                  type: string
+                  format: date
+                  example: "2026-07-14"
+                home_currency:
+                  type: string
+                  pattern: "^[A-Z]{3}$"
+                  description: ISO 4217 currency code
+                  example: "USD"
+                description:
+                  type: string
+                  maxLength: 2000
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 20
+      responses:
+        "201":
+          description: Trip created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    get:
+      operationId: listTrips
+      summary: List user's trips
+      tags: [Trips]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, active, completed, cancelled]
+        - $ref: "#/components/parameters/CursorParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [start_date, created_at, updated_at]
+            default: start_date
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        "200":
+          description: Paginated list of trips
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, cursor, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Trip"
+                  cursor:
+                    $ref: "#/components/schemas/Cursor"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /trips/{tripId}:
+    parameters:
+      - $ref: "#/components/parameters/TripId"
+
+    get:
+      operationId: getTrip
+      summary: Get trip details with travelers, budget, and health score
+      tags: [Trips]
+      parameters:
+        - name: include
+          in: query
+          description: Comma-separated list of related resources to embed
+          schema:
+            type: string
+            example: "travelers,budget,health"
+      responses:
+        "200":
+          description: Trip details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Trip"
+                  - type: object
+                    properties:
+                      travelers:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Traveler"
+                      budget:
+                        $ref: "#/components/schemas/Budget"
+                      health:
+                        $ref: "#/components/schemas/TripHealth"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      operationId: updateTrip
+      summary: Update trip details
+      tags: [Trips]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                start_date:
+                  type: string
+                  format: date
+                end_date:
+                  type: string
+                  format: date
+                status:
+                  type: string
+                  enum: [draft, active, completed]
+                description:
+                  type: string
+                  maxLength: 2000
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 20
+      responses:
+        "200":
+          description: Trip updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    delete:
+      operationId: deleteTrip
+      summary: Soft-delete a trip (sets status to cancelled)
+      tags: [Trips]
+      responses:
+        "200":
+          description: Trip cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Trip is already cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Travelers
+  # ──────────────────────────────────────────────
+  /trips/{tripId}/travelers:
+    parameters:
+      - $ref: "#/components/parameters/TripId"
+
+    post:
+      operationId: addTraveler
+      summary: Add a traveler to the trip
+      tags: [Travelers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [first_name, last_name, role]
+              properties:
+                first_name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  example: "Jane"
+                last_name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  example: "Doe"
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                  enum: [organizer, adult, child, infant]
+                  example: "adult"
+                date_of_birth:
+                  type: string
+                  format: date
+                loyalty_programs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      provider:
+                        type: string
+                      member_id:
+                        type: string
+                constraints:
+                  $ref: "#/components/schemas/TravelerConstraints"
+      responses:
+        "201":
+          description: Traveler added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Traveler"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    get:
+      operationId: listTravelers
+      summary: List travelers in a trip
+      tags: [Travelers]
+      responses:
+        "200":
+          description: List of travelers
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Traveler"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /trips/{tripId}/travelers/{travelerId}:
+    parameters:
+      - $ref: "#/components/parameters/TripId"
+      - $ref: "#/components/parameters/TravelerId"
+
+    patch:
+      operationId: updateTraveler
+      summary: Update traveler details
+      tags: [Travelers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                first_name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                last_name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                  enum: [organizer, adult, child, infant]
+                date_of_birth:
+                  type: string
+                  format: date
+                loyalty_programs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      provider:
+                        type: string
+                      member_id:
+                        type: string
+                constraints:
+                  $ref: "#/components/schemas/TravelerConstraints"
+      responses:
+        "200":
+          description: Traveler updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Traveler"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    delete:
+      operationId: removeTraveler
+      summary: Remove a traveler from the trip
+      tags: [Travelers]
+      responses:
+        "204":
+          description: Traveler removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Traveler has active reservations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Itinerary
+  # ──────────────────────────────────────────────
+  /trips/{tripId}/itinerary:
+    parameters:
+      - $ref: "#/components/parameters/TripId"
+
+    post:
+      operationId: addItineraryItem
+      summary: Add an item to the trip itinerary
+      tags: [Itinerary]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [item_type, title, start_at, position]
+              properties:
+                item_type:
+                  type: string
+                  enum: [flight, hotel, dining, activity, transport, note, custom]
+                  example: "dining"
+                entity_id:
+                  type: string
+                  format: uuid
+                  description: Reference to the entity in its source service (e.g., restaurant_id, hotel_id)
+                reservation_id:
+                  type: string
+                  format: uuid
+                  description: Associated reservation in the commerce service
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                  example: "Dinner at Sukiyabashi Jiro"
+                start_at:
+                  type: string
+                  format: date-time
+                  example: "2026-07-03T19:00:00+09:00"
+                end_at:
+                  type: string
+                  format: date-time
+                  example: "2026-07-03T21:00:00+09:00"
+                position:
+                  type: number
+                  format: float
+                  description: Ordering position (supports fractional values for insertion between items)
+                  example: 1.5
+                details:
+                  type: object
+                  description: Freeform metadata specific to the item type
+                  additionalProperties: true
+                  example:
+                    confirmation_code: "RES-12345"
+                    notes: "Request omakase counter seating"
+                location:
+                  $ref: "#/components/schemas/GeoLocation"
+      responses:
+        "201":
+          description: Itinerary item added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItineraryItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    get:
+      operationId: getItinerary
+      summary: Get full itinerary ordered by position
+      tags: [Itinerary]
+      parameters:
+        - name: date
+          in: query
+          description: Filter items for a specific date
+          schema:
+            type: string
+            format: date
+        - name: item_type
+          in: query
+          description: Filter by item type
+          schema:
+            type: string
+            enum: [flight, hotel, dining, activity, transport, note, custom]
+      responses:
+        "200":
+          description: Full itinerary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ItineraryItem"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /trips/{tripId}/itinerary/{itemId}:
+    parameters:
+      - $ref: "#/components/parameters/TripId"
+      - $ref: "#/components/parameters/ItemId"
+
+    patch:
+      operationId: updateItineraryItem
+      summary: Update an itinerary item
+      tags: [Itinerary]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                start_at:
+                  type: string
+                  format: date-time
+                end_at:
+                  type: string
+                  format: date-time
+                position:
+                  type: number
+                  format: float
+                details:
+                  type: object
+                  additionalProperties: true
+                location:
+                  $ref: "#/components/schemas/GeoLocation"
+      responses:
+        "200":
+          description: Itinerary item updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItineraryItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    delete:
+      operationId: removeItineraryItem
+      summary: Remove an item from the itinerary
+      tags: [Itinerary]
+      responses:
+        "204":
+          description: Item removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /trips/{tripId}/itinerary/reorder:
+    parameters:
+      - $ref: "#/components/parameters/TripId"
+
+    post:
+      operationId: reorderItinerary
+      summary: Reorder itinerary items
+      tags: [Itinerary]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [item_id, position]
+                    properties:
+                      item_id:
+                        type: string
+                        format: uuid
+                      position:
+                        type: number
+                        format: float
+      responses:
+        "200":
+          description: Items reordered
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ItineraryItem"
+                  total:
+                    type: integer
+                    minimum: 0
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  # ──────────────────────────────────────────────
+  # Collaborators
+  # ──────────────────────────────────────────────
+  /trips/{tripId}/collaborators:
+    parameters:
+      - $ref: "#/components/parameters/TripId"
+
+    post:
+      operationId: addCollaborator
+      summary: Add a collaborator to the trip
+      tags: [Collaborators]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, permission]
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                permission:
+                  type: string
+                  enum: [viewer, editor, admin]
+                  example: "editor"
+      responses:
+        "201":
+          description: Collaborator added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collaborator"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: User is already a collaborator
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      operationId: listCollaborators
+      summary: List trip collaborators
+      tags: [Collaborators]
+      responses:
+        "200":
+          description: List of collaborators
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Collaborator"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /trips/{tripId}/collaborators/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/TripId"
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    patch:
+      operationId: updateCollaborator
+      summary: Update collaborator permission
+      tags: [Collaborators]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [permission]
+              properties:
+                permission:
+                  type: string
+                  enum: [viewer, editor, admin]
+      responses:
+        "200":
+          description: Collaborator updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collaborator"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      operationId: removeCollaborator
+      summary: Remove a collaborator from the trip
+      tags: [Collaborators]
+      responses:
+        "204":
+          description: Collaborator removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ──────────────────────────────────────────────
+  # Budget
+  # ──────────────────────────────────────────────
+  /trips/{tripId}/budget:
+    parameters:
+      - $ref: "#/components/parameters/TripId"
+
+    get:
+      operationId: getBudget
+      summary: Get trip budget with category breakdown
+      tags: [Budget]
+      responses:
+        "200":
+          description: Trip budget
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      operationId: setBudget
+      summary: Set or update the trip budget
+      tags: [Budget]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [total_budget, currency]
+              properties:
+                total_budget:
+                  type: number
+                  format: double
+                  minimum: 0
+                  example: 5000.00
+                currency:
+                  type: string
+                  pattern: "^[A-Z]{3}$"
+                  example: "USD"
+                categories:
+                  type: array
+                  items:
+                    type: object
+                    required: [name, allocated]
+                    properties:
+                      name:
+                        type: string
+                        enum: [flights, hotels, dining, activities, transport, shopping, other]
+                      allocated:
+                        type: number
+                        format: double
+                        minimum: 0
+                        example: 1200.00
+      responses:
+        "200":
+          description: Budget set/updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  # ──────────────────────────────────────────────
+  # Health
+  # ──────────────────────────────────────────────
+  /trips/{tripId}/health:
+    parameters:
+      - $ref: "#/components/parameters/TripId"
+
+    get:
+      operationId: getTripHealth
+      summary: Get trip health score and advisory signals
+      tags: [Health]
+      responses:
+        "200":
+          description: Trip health score and signals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripHealth"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from Atlas One Identity Service
+
+  parameters:
+    TripId:
+      name: tripId
+      in: path
+      required: true
+      description: Unique trip identifier
+      schema:
+        type: string
+        format: uuid
+
+    TravelerId:
+      name: travelerId
+      in: path
+      required: true
+      description: Unique traveler identifier
+      schema:
+        type: string
+        format: uuid
+
+    ItemId:
+      name: itemId
+      in: path
+      required: true
+      description: Unique itinerary item identifier
+      schema:
+        type: string
+        format: uuid
+
+    CursorParam:
+      name: cursor
+      in: query
+      description: Opaque cursor for pagination
+      schema:
+        type: string
+
+    LimitParam:
+      name: limit
+      in: query
+      description: Maximum number of items to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    # ── Core Models ──────────────────────────────
+
+    Trip:
+      type: object
+      required: [id, owner_id, title, start_date, end_date, home_currency, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        owner_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: "Summer in Tokyo"
+        description:
+          type: string
+        start_date:
+          type: string
+          format: date
+          example: "2026-07-01"
+        end_date:
+          type: string
+          format: date
+          example: "2026-07-14"
+        home_currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          example: "USD"
+        status:
+          type: string
+          enum: [draft, active, completed, cancelled]
+          example: "active"
+        tags:
+          type: array
+          items:
+            type: string
+        traveler_count:
+          type: integer
+          minimum: 0
+        itinerary_item_count:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Traveler:
+      type: object
+      required: [id, trip_id, first_name, last_name, role, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        trip_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+          description: Linked Atlas One user account (null if guest traveler)
+        first_name:
+          type: string
+          example: "Jane"
+        last_name:
+          type: string
+          example: "Doe"
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [organizer, adult, child, infant]
+        date_of_birth:
+          type: string
+          format: date
+        loyalty_programs:
+          type: array
+          items:
+            type: object
+            properties:
+              provider:
+                type: string
+              member_id:
+                type: string
+        constraints:
+          $ref: "#/components/schemas/TravelerConstraints"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TravelerConstraints:
+      type: object
+      description: Dietary, accessibility, and preference constraints for the traveler
+      properties:
+        dietary:
+          type: array
+          items:
+            type: string
+          example: ["vegetarian", "gluten-free"]
+        accessibility:
+          type: array
+          items:
+            type: string
+          example: ["wheelchair"]
+        seat_preference:
+          type: string
+          enum: [window, aisle, middle, no_preference]
+        allergies:
+          type: array
+          items:
+            type: string
+          example: ["peanuts"]
+        notes:
+          type: string
+          maxLength: 1000
+
+    ItineraryItem:
+      type: object
+      required: [id, trip_id, item_type, title, start_at, position, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        trip_id:
+          type: string
+          format: uuid
+        item_type:
+          type: string
+          enum: [flight, hotel, dining, activity, transport, note, custom]
+        entity_id:
+          type: string
+          format: uuid
+        reservation_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: "Dinner at Sukiyabashi Jiro"
+        start_at:
+          type: string
+          format: date-time
+        end_at:
+          type: string
+          format: date-time
+        position:
+          type: number
+          format: float
+        details:
+          type: object
+          additionalProperties: true
+        location:
+          $ref: "#/components/schemas/GeoLocation"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Collaborator:
+      type: object
+      required: [user_id, trip_id, permission, created_at, updated_at]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        trip_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        email:
+          type: string
+          format: email
+        avatar_url:
+          type: string
+          format: uri
+        permission:
+          type: string
+          enum: [viewer, editor, admin]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Budget:
+      type: object
+      required: [trip_id, total_budget, spent, remaining, currency, categories, updated_at]
+      properties:
+        trip_id:
+          type: string
+          format: uuid
+        total_budget:
+          type: number
+          format: double
+          example: 5000.00
+        spent:
+          type: number
+          format: double
+          description: Total amount spent across all categories
+          example: 2340.50
+        remaining:
+          type: number
+          format: double
+          description: total_budget minus spent
+          example: 2659.50
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          example: "USD"
+        categories:
+          type: array
+          items:
+            type: object
+            required: [name, allocated, spent]
+            properties:
+              name:
+                type: string
+                enum: [flights, hotels, dining, activities, transport, shopping, other]
+              allocated:
+                type: number
+                format: double
+                example: 1200.00
+              spent:
+                type: number
+                format: double
+                example: 980.00
+        updated_at:
+          type: string
+          format: date-time
+
+    TripHealth:
+      type: object
+      required: [trip_id, overall_score, signals, assessed_at]
+      properties:
+        trip_id:
+          type: string
+          format: uuid
+        overall_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Composite trip health score (0-100)
+          example: 78
+        grade:
+          type: string
+          enum: [excellent, good, fair, needs_attention, critical]
+          example: "good"
+        signals:
+          type: array
+          items:
+            $ref: "#/components/schemas/HealthSignal"
+        assessed_at:
+          type: string
+          format: date-time
+
+    HealthSignal:
+      type: object
+      required: [signal_type, severity, message]
+      properties:
+        signal_type:
+          type: string
+          enum:
+            - budget_overrun
+            - schedule_conflict
+            - missing_reservation
+            - visa_required
+            - weather_alert
+            - flight_delay
+            - price_drop
+            - gap_in_itinerary
+            - unconfirmed_booking
+          example: "schedule_conflict"
+        severity:
+          type: string
+          enum: [info, warning, critical]
+          example: "warning"
+        message:
+          type: string
+          example: "Dinner reservation overlaps with evening tour on Jul 5"
+        related_item_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        action_url:
+          type: string
+          format: uri
+          description: Deep link to resolve the issue
+
+    # ── Shared ───────────────────────────────────
+
+    GeoLocation:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        address:
+          type: string
+        place_id:
+          type: string
+          description: Google Places or Atlas One place identifier
+
+    Cursor:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Cursor to fetch the next page (null if no more results)
+        prev:
+          type: string
+          description: Cursor to fetch the previous page (null if on first page)
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              description: Human-readable error description
+              example: "end_date must be after start_date"
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    example: "end_date"
+                  reason:
+                    type: string
+                    example: "must be after start_date"
+                  value:
+                    description: The invalid value that was provided
+
+  responses:
+    BadRequest:
+      description: Invalid request syntax or malformed body
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "BAD_REQUEST"
+              message: "Request body could not be parsed"
+
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "UNAUTHORIZED"
+              message: "Bearer token is missing or expired"
+
+    Forbidden:
+      description: Authenticated user lacks permission for this action
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "FORBIDDEN"
+              message: "You do not have permission to access this trip"
+
+    NotFound:
+      description: Requested resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "NOT_FOUND"
+              message: "Trip not found"
+
+    Conflict:
+      description: Request conflicts with current resource state
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "CONFLICT"
+              message: "Trip dates conflict with an existing active trip"
+
+    UnprocessableEntity:
+      description: Request body is syntactically valid but semantically incorrect
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "VALIDATION_ERROR"
+              message: "end_date must be after start_date"
+              details:
+                - field: "end_date"
+                  reason: "must be after start_date"
+                  value: "2026-06-30"

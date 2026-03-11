@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "finance.wallet.credited",
+  "description": "Emitted when a user's wallet is credited with funds",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": ["wallet_id", "user_id", "amount", "currency", "running_balance", "credit_type", "reference_type", "reference_id", "description"],
+      "properties": {
+        "wallet_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier of the wallet"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who owns the wallet"
+        },
+        "amount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Amount credited"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code"
+        },
+        "running_balance": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Wallet balance after this credit"
+        },
+        "credit_type": {
+          "type": "string",
+          "enum": [
+            "refund",
+            "reward",
+            "promotion",
+            "claim_payout",
+            "chargeback_reversal"
+          ],
+          "description": "Type of credit applied"
+        },
+        "reference_type": {
+          "type": "string",
+          "description": "Type of the originating entity (e.g., order, claim, promotion)"
+        },
+        "reference_id": {
+          "type": "string",
+          "description": "Identifier of the originating entity"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of the credit"
+        }
+      }
+    }
+  }
+}

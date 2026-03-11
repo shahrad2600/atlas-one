@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "risk.review.flagged",
+  "description": "Emitted when a review is flagged by the trust and safety system",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": ["review_id", "entity_id", "entity_type", "user_id", "fraud_score", "trust_score", "reason_codes", "action"],
+      "properties": {
+        "review_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier of the flagged review"
+        },
+        "entity_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Entity the review is about"
+        },
+        "entity_type": {
+          "type": "string",
+          "description": "Type of entity being reviewed"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who submitted the review"
+        },
+        "fraud_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Probability that the review is fraudulent (0-1)"
+        },
+        "trust_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Trustworthiness score of the reviewer (0-1)"
+        },
+        "reason_codes": {
+          "type": "array",
+          "description": "Machine-generated codes explaining why the review was flagged",
+          "items": {
+            "type": "string"
+          }
+        },
+        "action": {
+          "type": "string",
+          "enum": ["hidden", "queued_for_review", "auto_removed", "none"],
+          "description": "Automated action taken on the review"
+        },
+        "evidence": {
+          "type": "object",
+          "description": "Supporting evidence for the flagging decision"
+        }
+      }
+    }
+  }
+}

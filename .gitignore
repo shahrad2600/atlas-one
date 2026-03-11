@@ -1,0 +1,74 @@
+# ─────────────────────────────────────────────────────────────
+# Atlas One — .gitignore
+# ─────────────────────────────────────────────────────────────
+
+# ── Dependencies ──────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ── Build Output ──────────────────────────────────────────────
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# ── Environment ───────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ── Testing ───────────────────────────────────────────────────
+coverage/
+*.lcov
+.nyc_output/
+
+# ── IDE / Editor ──────────────────────────────────────────────
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── OS Files ──────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# ── Docker ────────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── Logs ──────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Misc ──────────────────────────────────────────────────────
+.turbo/
+.cache/
+.temp/
+.tmp/
+*.pid
+*.seed
+*.pid.lock
+
+# ── Secrets / Keys ────────────────────────────────────────────
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+service-account*.json
+credentials*.json

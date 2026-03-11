@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "insurance.claim.status_changed",
+  "description": "Emitted when an insurance claim changes status",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": ["claim_id", "policy_id", "user_id", "claim_type", "old_status", "new_status", "amount_claimed"],
+      "properties": {
+        "claim_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the insurance claim"
+        },
+        "policy_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Insurance policy the claim is filed against"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who filed the claim"
+        },
+        "claim_type": {
+          "type": "string",
+          "description": "Type of insurance claim (e.g., trip_cancellation, medical, baggage)"
+        },
+        "old_status": {
+          "type": "string",
+          "description": "Previous status of the claim"
+        },
+        "new_status": {
+          "type": "string",
+          "description": "New status of the claim"
+        },
+        "amount_claimed": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total amount claimed"
+        },
+        "amount_approved": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Amount approved for payout, if determined"
+        },
+        "amount_paid": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Amount already paid out, if any"
+        },
+        "reason": {
+          "type": ["string", "null"],
+          "description": "Reason for the status change, if applicable"
+        }
+      }
+    }
+  }
+}

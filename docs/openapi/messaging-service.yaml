@@ -1,0 +1,753 @@
+openapi: 3.1.0
+info:
+  title: Atlas One - Messaging & Notifications API
+  description: |
+    Provides cross-platform messaging threads, push/email/SMS notifications,
+    and user notification preference management for the Atlas One platform.
+  version: 1.0.0
+  contact:
+    name: Atlas One API Support
+    email: api-support@atlasone.com
+
+servers:
+  - url: https://api.atlasone.com/v1/messaging
+    description: Production
+  - url: https://api.staging.atlasone.com/v1/messaging
+    description: Staging
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Threads
+    description: Message thread management
+  - name: Messages
+    description: Sending and reading messages
+  - name: Notifications
+    description: Notification inbox
+  - name: Preferences
+    description: Notification preference management
+
+paths:
+  # ── Threads ────────────────────────────────────────────────────────────
+  /threads:
+    get:
+      operationId: listThreads
+      tags: [Threads]
+      summary: List user's message threads
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum:
+              - booking_inquiry
+              - reservation
+              - support
+              - host_guest
+              - system
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, archived, closed]
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Paginated thread list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Thread'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      operationId: createThread
+      tags: [Threads]
+      summary: Create message thread
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateThreadRequest'
+      responses:
+        '201':
+          description: Thread created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thread'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /threads/{threadId}:
+    parameters:
+      - $ref: '#/components/parameters/ThreadId'
+
+    get:
+      operationId: getThread
+      tags: [Threads]
+      summary: Get thread with messages
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Thread with paginated messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreadDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /threads/{threadId}/messages:
+    parameters:
+      - $ref: '#/components/parameters/ThreadId'
+
+    post:
+      operationId: sendMessage
+      tags: [Messages]
+      summary: Send message to thread
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /threads/{threadId}/read:
+    parameters:
+      - $ref: '#/components/parameters/ThreadId'
+
+    patch:
+      operationId: markThreadRead
+      tags: [Threads]
+      summary: Mark thread as read
+      responses:
+        '200':
+          description: Thread marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  thread_id:
+                    type: string
+                    format: uuid
+                  read_at:
+                    type: string
+                    format: date-time
+                  unread_count:
+                    type: integer
+                    description: Remaining unread count (should be 0)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Notifications ──────────────────────────────────────────────────────
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [Notifications]
+      summary: List notifications
+      parameters:
+        - name: channel
+          in: query
+          schema:
+            type: string
+            enum: [push, email, sms, in_app]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [unread, read, all]
+            default: all
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum:
+              - booking
+              - payment
+              - review
+              - promotion
+              - system
+              - disruption
+              - reminder
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paginated notification list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  cursor:
+                    $ref: '#/components/schemas/Cursor'
+                  total:
+                    type: integer
+                  unread_count:
+                    type: integer
+                    description: Total unread across all categories
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/{notificationId}/read:
+    parameters:
+      - name: notificationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    patch:
+      operationId: markNotificationRead
+      tags: [Notifications]
+      summary: Mark notification as read
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notification_id:
+                    type: string
+                    format: uuid
+                  read_at:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Preferences ────────────────────────────────────────────────────────
+  /preferences:
+    get:
+      operationId: getNotificationPreferences
+      tags: [Preferences]
+      summary: Get notification preferences
+      responses:
+        '200':
+          description: Notification preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    format: uuid
+                  preferences:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificationPreference'
+                  updated_at:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      operationId: updateNotificationPreferences
+      tags: [Preferences]
+      summary: Update notification preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [preferences]
+              properties:
+                preferences:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/NotificationPreferenceUpdate'
+                  minItems: 1
+      responses:
+        '200':
+          description: Preferences updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    format: uuid
+                  preferences:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificationPreference'
+                  updated_at:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    ThreadId:
+      name: threadId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableEntity:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # ── Common ───────────────────────────────────────────────────────────
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              examples: ['THREAD_NOT_FOUND']
+            message:
+              type: string
+              examples: ['The requested thread does not exist or you do not have access.']
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  reason:
+                    type: string
+
+    Cursor:
+      type: object
+      properties:
+        next:
+          type: string
+          nullable: true
+        prev:
+          type: string
+          nullable: true
+
+    # ── Thread ───────────────────────────────────────────────────────────
+    Thread:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        thread_type:
+          type: string
+          enum:
+            - booking_inquiry
+            - reservation
+            - support
+            - host_guest
+            - system
+        subject:
+          type: string
+        status:
+          type: string
+          enum: [active, archived, closed]
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Participant'
+        reference_type:
+          type: string
+          enum: [reservation, property, ticket, claim, trip]
+          nullable: true
+        reference_id:
+          type: string
+          format: uuid
+          nullable: true
+        last_message_at:
+          type: string
+          format: date-time
+        last_message_preview:
+          type: string
+          maxLength: 200
+        unread_count:
+          type: integer
+        message_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateThreadRequest:
+      type: object
+      required: [thread_type, participants, subject]
+      properties:
+        thread_type:
+          type: string
+          enum:
+            - booking_inquiry
+            - reservation
+            - support
+            - host_guest
+        participants:
+          type: array
+          items:
+            type: object
+            required: [user_id]
+            properties:
+              user_id:
+                type: string
+                format: uuid
+              role:
+                type: string
+                enum: [guest, host, support_agent]
+          minItems: 1
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+        reference_type:
+          type: string
+          enum: [reservation, property, ticket, claim, trip]
+        reference_id:
+          type: string
+          format: uuid
+        initial_message:
+          type: object
+          properties:
+            body:
+              type: string
+              minLength: 1
+              maxLength: 10000
+            content_type:
+              type: string
+              enum: [text, html]
+              default: text
+
+    ThreadDetail:
+      allOf:
+        - $ref: '#/components/schemas/Thread'
+        - type: object
+          properties:
+            messages:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Message'
+                cursor:
+                  $ref: '#/components/schemas/Cursor'
+                total:
+                  type: integer
+
+    # ── Participant ──────────────────────────────────────────────────────
+    Participant:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+        role:
+          type: string
+          enum: [guest, host, support_agent, system]
+        joined_at:
+          type: string
+          format: date-time
+        last_read_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    # ── Message ──────────────────────────────────────────────────────────
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        thread_id:
+          type: string
+          format: uuid
+        sender_id:
+          type: string
+          format: uuid
+        sender_display_name:
+          type: string
+        sender_role:
+          type: string
+          enum: [guest, host, support_agent, system]
+        body:
+          type: string
+        content_type:
+          type: string
+          enum: [text, html]
+        metadata:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Structured data (e.g., booking card, action buttons)
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              file_name:
+                type: string
+              file_type:
+                type: string
+                examples: ['image/jpeg']
+              file_size:
+                type: integer
+                description: Size in bytes
+              url:
+                type: string
+                format: uri
+        read_by:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+                format: uuid
+              read_at:
+                type: string
+                format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    SendMessageRequest:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        content_type:
+          type: string
+          enum: [text, html]
+          default: text
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Optional structured metadata (e.g., booking card data)
+
+    # ── Notification ─────────────────────────────────────────────────────
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum: [push, email, sms, in_app]
+        category:
+          type: string
+          enum:
+            - booking
+            - payment
+            - review
+            - promotion
+            - system
+            - disruption
+            - reminder
+        title:
+          type: string
+        body:
+          type: string
+        icon_url:
+          type: string
+          format: uri
+          nullable: true
+        action_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Deep link or URL for the notification action
+        reference_type:
+          type: string
+          enum: [reservation, ticket, claim, policy, payout, thread, trip]
+          nullable: true
+        reference_id:
+          type: string
+          format: uuid
+          nullable: true
+        read:
+          type: boolean
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    # ── Notification Preferences ─────────────────────────────────────────
+    NotificationPreference:
+      type: object
+      properties:
+        channel:
+          type: string
+          enum: [push, email, sms, in_app]
+        category:
+          type: string
+          enum:
+            - booking
+            - payment
+            - review
+            - promotion
+            - system
+            - disruption
+            - reminder
+        enabled:
+          type: boolean
+        description:
+          type: string
+          description: Human-readable description of this preference
+
+    NotificationPreferenceUpdate:
+      type: object
+      required: [channel, category, enabled]
+      properties:
+        channel:
+          type: string
+          enum: [push, email, sms, in_app]
+        category:
+          type: string
+          enum:
+            - booking
+            - payment
+            - review
+            - promotion
+            - system
+            - disruption
+            - reminder
+        enabled:
+          type: boolean

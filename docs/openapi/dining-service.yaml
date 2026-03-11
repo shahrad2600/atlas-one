@@ -1,0 +1,2826 @@
+openapi: 3.1.0
+info:
+  title: Atlas One - Dining Service API
+  description: |
+    The Dining Service provides Resy/OpenTable-parity restaurant reservation capabilities
+    plus Atlas One enhancements: AI-powered notify requests, dining experiences, loyalty,
+    and integrated messaging. It serves both restaurant partners (supply-side) and
+    consumers (demand-side).
+  version: 1.0.0
+  contact:
+    name: Atlas One Platform Team
+    email: platform@atlasone.com
+
+servers:
+  - url: https://api.atlasone.com/v1/dining
+    description: Production
+  - url: https://api.staging.atlasone.com/v1/dining
+    description: Staging
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Restaurants
+    description: Restaurant registration and management (partner-facing)
+  - name: Tables
+    description: Table inventory management
+  - name: Service Periods
+    description: Recurring service period configuration
+  - name: Shifts
+    description: Date-specific shift management
+  - name: Policies
+    description: Dining policies (cancellation, card holds, no-show fees)
+  - name: Experiences
+    description: Prepaid dining experiences and tasting menus
+  - name: Availability
+    description: Consumer-facing availability search
+  - name: Reservations
+    description: Consumer-facing reservation booking and management
+  - name: Notify
+    description: Notification requests for desired reservations
+  - name: Waitlist
+    description: Walk-in and virtual waitlist management
+  - name: Messaging
+    description: Restaurant-guest messaging
+  - name: Loyalty
+    description: Dining loyalty points and rewards
+
+paths:
+  # ════════════════════════════════════════════════
+  #  PARTNER-FACING: Restaurant Management
+  # ════════════════════════════════════════════════
+
+  # ──────────────────────────────────────────────
+  # Restaurants
+  # ──────────────────────────────────────────────
+  /restaurants:
+    post:
+      operationId: registerRestaurant
+      summary: Register a new restaurant
+      tags: [Restaurants]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [venue_id, supplier_id, settings]
+              properties:
+                venue_id:
+                  type: string
+                  format: uuid
+                  description: Reference to the Atlas One venue/place entity
+                supplier_id:
+                  type: string
+                  format: uuid
+                  description: Supplier account that owns this restaurant
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                  example: "Sukiyabashi Jiro"
+                cuisine_types:
+                  type: array
+                  items:
+                    type: string
+                  example: ["japanese", "sushi", "omakase"]
+                price_tier:
+                  type: integer
+                  minimum: 1
+                  maximum: 4
+                  description: Price tier (1=budget, 4=fine dining)
+                  example: 4
+                settings:
+                  $ref: "#/components/schemas/RestaurantSettings"
+      responses:
+        "201":
+          description: Restaurant registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Restaurant"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Restaurant already registered for this venue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /restaurants/{restaurantId}:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+
+    get:
+      operationId: getRestaurant
+      summary: Get restaurant details
+      tags: [Restaurants]
+      responses:
+        "200":
+          description: Restaurant details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Restaurant"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      operationId: updateRestaurant
+      summary: Update restaurant settings
+      tags: [Restaurants]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                cuisine_types:
+                  type: array
+                  items:
+                    type: string
+                price_tier:
+                  type: integer
+                  minimum: 1
+                  maximum: 4
+                settings:
+                  $ref: "#/components/schemas/RestaurantSettings"
+                status:
+                  type: string
+                  enum: [active, paused, closed]
+      responses:
+        "200":
+          description: Restaurant updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Restaurant"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  # ──────────────────────────────────────────────
+  # Tables
+  # ──────────────────────────────────────────────
+  /restaurants/{restaurantId}/tables:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+
+    post:
+      operationId: addTable
+      summary: Add a table to the restaurant
+      tags: [Tables]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label, min_party, max_party, section]
+              properties:
+                label:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  description: Table identifier visible to staff
+                  example: "T12"
+                min_party:
+                  type: integer
+                  minimum: 1
+                  example: 2
+                max_party:
+                  type: integer
+                  minimum: 1
+                  example: 4
+                section:
+                  type: string
+                  example: "main_dining"
+                attributes:
+                  type: array
+                  items:
+                    type: string
+                  description: Table features and characteristics
+                  example: ["window", "booth", "quiet"]
+                position:
+                  type: object
+                  description: Optional floor-plan coordinates
+                  properties:
+                    x:
+                      type: number
+                    y:
+                      type: number
+                    floor:
+                      type: integer
+      responses:
+        "201":
+          description: Table added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiningTable"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    get:
+      operationId: listTables
+      summary: List restaurant tables
+      tags: [Tables]
+      parameters:
+        - name: section
+          in: query
+          schema:
+            type: string
+        - name: active
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: List of tables
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DiningTable"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /restaurants/{restaurantId}/tables/{tableId}:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+      - $ref: "#/components/parameters/TableId"
+
+    patch:
+      operationId: updateTable
+      summary: Update table configuration
+      tags: [Tables]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                label:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                min_party:
+                  type: integer
+                  minimum: 1
+                max_party:
+                  type: integer
+                  minimum: 1
+                section:
+                  type: string
+                attributes:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Table updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiningTable"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    delete:
+      operationId: deactivateTable
+      summary: Deactivate a table (soft delete)
+      tags: [Tables]
+      responses:
+        "200":
+          description: Table deactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiningTable"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Table has upcoming reservations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Service Periods
+  # ──────────────────────────────────────────────
+  /restaurants/{restaurantId}/service-periods:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+
+    post:
+      operationId: createServicePeriod
+      summary: Create a recurring service period (e.g., lunch, dinner)
+      tags: [Service Periods]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, start_time, end_time, days_of_week, slot_duration_min, tables]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  example: "Dinner"
+                start_time:
+                  type: string
+                  pattern: "^\\d{2}:\\d{2}$"
+                  description: Start time in HH:MM (24h local time)
+                  example: "18:00"
+                end_time:
+                  type: string
+                  pattern: "^\\d{2}:\\d{2}$"
+                  description: End time in HH:MM (24h local time)
+                  example: "22:00"
+                last_seating_time:
+                  type: string
+                  pattern: "^\\d{2}:\\d{2}$"
+                  description: Last seating time (defaults to end_time minus one slot)
+                  example: "21:00"
+                days_of_week:
+                  type: array
+                  items:
+                    type: integer
+                    minimum: 0
+                    maximum: 6
+                  description: Days this period is active (0=Sunday, 6=Saturday)
+                  example: [1, 2, 3, 4, 5, 6]
+                slot_duration_min:
+                  type: integer
+                  minimum: 15
+                  maximum: 480
+                  description: Default reservation slot length in minutes
+                  example: 90
+                tables:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Table IDs available during this service period
+                pacing:
+                  type: object
+                  description: Controls for reservation pacing
+                  properties:
+                    max_covers_per_slot:
+                      type: integer
+                      minimum: 1
+                      description: Maximum total covers seatable per time slot
+                    max_reservations_per_slot:
+                      type: integer
+                      minimum: 1
+                      description: Maximum number of reservations per time slot
+                    slot_interval_min:
+                      type: integer
+                      minimum: 5
+                      maximum: 120
+                      description: Minutes between available slot start times
+                      example: 15
+      responses:
+        "201":
+          description: Service period created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServicePeriod"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Overlapping service period exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    get:
+      operationId: listServicePeriods
+      summary: List restaurant service periods
+      tags: [Service Periods]
+      responses:
+        "200":
+          description: List of service periods
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ServicePeriod"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /restaurants/{restaurantId}/service-periods/{periodId}:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+      - $ref: "#/components/parameters/PeriodId"
+
+    patch:
+      operationId: updateServicePeriod
+      summary: Update a service period
+      tags: [Service Periods]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                start_time:
+                  type: string
+                  pattern: "^\\d{2}:\\d{2}$"
+                end_time:
+                  type: string
+                  pattern: "^\\d{2}:\\d{2}$"
+                last_seating_time:
+                  type: string
+                  pattern: "^\\d{2}:\\d{2}$"
+                days_of_week:
+                  type: array
+                  items:
+                    type: integer
+                    minimum: 0
+                    maximum: 6
+                slot_duration_min:
+                  type: integer
+                  minimum: 15
+                  maximum: 480
+                tables:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                pacing:
+                  type: object
+                  properties:
+                    max_covers_per_slot:
+                      type: integer
+                      minimum: 1
+                    max_reservations_per_slot:
+                      type: integer
+                      minimum: 1
+                    slot_interval_min:
+                      type: integer
+                      minimum: 5
+                      maximum: 120
+                active:
+                  type: boolean
+      responses:
+        "200":
+          description: Service period updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServicePeriod"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Changes would conflict with existing reservations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  # ──────────────────────────────────────────────
+  # Shifts
+  # ──────────────────────────────────────────────
+  /restaurants/{restaurantId}/shifts:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+
+    post:
+      operationId: createShift
+      summary: Create a shift for a specific date (overrides service period defaults)
+      tags: [Shifts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [date, service_period_id]
+              properties:
+                date:
+                  type: string
+                  format: date
+                  example: "2026-07-03"
+                service_period_id:
+                  type: string
+                  format: uuid
+                  description: Base service period this shift is derived from
+                override_start_time:
+                  type: string
+                  pattern: "^\\d{2}:\\d{2}$"
+                  description: Override the default start time for this date
+                override_end_time:
+                  type: string
+                  pattern: "^\\d{2}:\\d{2}$"
+                override_last_seating:
+                  type: string
+                  pattern: "^\\d{2}:\\d{2}$"
+                override_tables:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Override available tables for this date
+                override_pacing:
+                  type: object
+                  properties:
+                    max_covers_per_slot:
+                      type: integer
+                      minimum: 1
+                    max_reservations_per_slot:
+                      type: integer
+                      minimum: 1
+                closed:
+                  type: boolean
+                  default: false
+                  description: Mark this shift as closed (no availability)
+                notes:
+                  type: string
+                  maxLength: 500
+                  description: Internal notes (e.g., "Private event", "Holiday hours")
+      responses:
+        "201":
+          description: Shift created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shift"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Shift already exists for this date and service period
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    get:
+      operationId: listShifts
+      summary: List shifts for date range
+      tags: [Shifts]
+      parameters:
+        - name: start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: service_period_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of shifts
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Shift"
+                  total:
+                    type: integer
+                    minimum: 0
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ──────────────────────────────────────────────
+  # Policies
+  # ──────────────────────────────────────────────
+  /restaurants/{restaurantId}/policies:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+
+    post:
+      operationId: setDiningPolicy
+      summary: Set a dining policy
+      tags: [Policies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [policy_type]
+              properties:
+                policy_type:
+                  type: string
+                  enum: [cancellation, card_hold, no_show, dress_code, age_restriction]
+                  example: "cancellation"
+                card_hold:
+                  type: object
+                  description: Credit card hold configuration (required if policy_type is card_hold)
+                  properties:
+                    required:
+                      type: boolean
+                      example: true
+                    amount_per_guest:
+                      type: number
+                      format: double
+                      example: 50.00
+                    currency:
+                      type: string
+                      pattern: "^[A-Z]{3}$"
+                      example: "USD"
+                    hold_message:
+                      type: string
+                      example: "A hold of $50 per guest will be placed on your card"
+                cancellation_window:
+                  type: object
+                  description: Cancellation policy details (required if policy_type is cancellation)
+                  properties:
+                    free_cancellation_hours:
+                      type: integer
+                      minimum: 0
+                      description: Hours before reservation start for free cancellation
+                      example: 24
+                    late_cancel_fee_per_guest:
+                      type: number
+                      format: double
+                      example: 50.00
+                    currency:
+                      type: string
+                      pattern: "^[A-Z]{3}$"
+                      example: "USD"
+                no_show_fee:
+                  type: object
+                  description: No-show fee configuration (required if policy_type is no_show)
+                  properties:
+                    fee_per_guest:
+                      type: number
+                      format: double
+                      example: 75.00
+                    currency:
+                      type: string
+                      pattern: "^[A-Z]{3}$"
+                      example: "USD"
+                description:
+                  type: string
+                  maxLength: 2000
+                  description: Human-readable policy text shown to guests
+                effective_from:
+                  type: string
+                  format: date
+                effective_until:
+                  type: string
+                  format: date
+      responses:
+        "201":
+          description: Policy created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiningPolicy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Active policy of this type already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    get:
+      operationId: listPolicies
+      summary: List restaurant policies
+      tags: [Policies]
+      parameters:
+        - name: policy_type
+          in: query
+          schema:
+            type: string
+            enum: [cancellation, card_hold, no_show, dress_code, age_restriction]
+        - name: active
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: List of policies
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DiningPolicy"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ──────────────────────────────────────────────
+  # Experiences
+  # ──────────────────────────────────────────────
+  /restaurants/{restaurantId}/experiences:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+
+    post:
+      operationId: createExperience
+      summary: Create a prepaid dining experience
+      tags: [Experiences]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, description, price_per_guest, currency, min_party, max_party]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                  example: "Chef's Omakase Experience"
+                description:
+                  type: string
+                  maxLength: 5000
+                  example: "A 20-course omakase journey featuring seasonal ingredients from Tsukiji Market"
+                price_per_guest:
+                  type: number
+                  format: double
+                  minimum: 0.01
+                  example: 350.00
+                currency:
+                  type: string
+                  pattern: "^[A-Z]{3}$"
+                  example: "USD"
+                min_party:
+                  type: integer
+                  minimum: 1
+                  example: 1
+                max_party:
+                  type: integer
+                  minimum: 1
+                  example: 8
+                duration_min:
+                  type: integer
+                  minimum: 15
+                  description: Expected experience duration in minutes
+                  example: 120
+                includes:
+                  type: array
+                  items:
+                    type: string
+                  example: ["20-course omakase", "Sake pairing", "Amuse bouche"]
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+                  maxItems: 10
+                available_service_periods:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Service period IDs when this experience can be booked
+                available_from:
+                  type: string
+                  format: date
+                available_until:
+                  type: string
+                  format: date
+      responses:
+        "201":
+          description: Experience created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiningExperience"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    get:
+      operationId: listExperiences
+      summary: List dining experiences
+      tags: [Experiences]
+      parameters:
+        - name: active
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: List of experiences
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DiningExperience"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ════════════════════════════════════════════════
+  #  CONSUMER-FACING
+  # ════════════════════════════════════════════════
+
+  # ──────────────────────────────────────────────
+  # Availability Search
+  # ──────────────────────────────────────────────
+  /search/availability:
+    get:
+      operationId: searchAvailability
+      summary: Search dining availability
+      tags: [Availability]
+      parameters:
+        - name: restaurant_id
+          in: query
+          description: Search a specific restaurant
+          schema:
+            type: string
+            format: uuid
+        - name: place_id
+          in: query
+          description: Search by Atlas One place identifier (for area search)
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: true
+          description: Target date for dining
+          schema:
+            type: string
+            format: date
+            example: "2026-07-03"
+        - name: party_size
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            example: 2
+        - name: time_window_start
+          in: query
+          description: Earliest acceptable time (HH:MM 24h)
+          schema:
+            type: string
+            pattern: "^\\d{2}:\\d{2}$"
+            example: "18:00"
+        - name: time_window_end
+          in: query
+          description: Latest acceptable time (HH:MM 24h)
+          schema:
+            type: string
+            pattern: "^\\d{2}:\\d{2}$"
+            example: "21:00"
+        - name: cuisine
+          in: query
+          description: Filter by cuisine type
+          schema:
+            type: string
+        - name: price_tier
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 4
+        - name: experience_id
+          in: query
+          description: Filter for a specific dining experience
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/CursorParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: Available dining slots
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, cursor, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [restaurant_id, restaurant_name, slots]
+                      properties:
+                        restaurant_id:
+                          type: string
+                          format: uuid
+                        restaurant_name:
+                          type: string
+                          example: "Sukiyabashi Jiro"
+                        cuisine_types:
+                          type: array
+                          items:
+                            type: string
+                        price_tier:
+                          type: integer
+                          minimum: 1
+                          maximum: 4
+                        slots:
+                          type: array
+                          items:
+                            $ref: "#/components/schemas/DiningSlot"
+                  cursor:
+                    $ref: "#/components/schemas/Cursor"
+                  total:
+                    type: integer
+                    minimum: 0
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ──────────────────────────────────────────────
+  # Reservations (Consumer)
+  # ──────────────────────────────────────────────
+  /reservations:
+    post:
+      operationId: bookReservation
+      summary: Book a dining reservation
+      tags: [Reservations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [restaurant_id, dining_slot_id, party_size]
+              properties:
+                restaurant_id:
+                  type: string
+                  format: uuid
+                dining_slot_id:
+                  type: string
+                  format: uuid
+                  description: Slot ID obtained from availability search
+                party_size:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                  example: 2
+                experience_id:
+                  type: string
+                  format: uuid
+                  description: Optional dining experience to book
+                special_requests:
+                  type: string
+                  maxLength: 2000
+                  example: "Celebrating an anniversary. Nut allergy for one guest."
+                card_token:
+                  type: string
+                  description: Payment card token for card-hold policies
+                guest_name:
+                  type: string
+                  maxLength: 200
+                  description: Name for the reservation (defaults to user profile name)
+                guest_phone:
+                  type: string
+                  description: Contact phone number
+                guest_email:
+                  type: string
+                  format: email
+                trip_id:
+                  type: string
+                  format: uuid
+                  description: Associate this reservation with a trip
+                idempotency_key:
+                  type: string
+                  format: uuid
+      responses:
+        "201":
+          description: Reservation confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Slot is no longer available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Card token required by policy or party size exceeds slot capacity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /reservations/{reservationId}:
+    parameters:
+      - $ref: "#/components/parameters/ReservationId"
+
+    get:
+      operationId: getReservation
+      summary: Get dining reservation details
+      tags: [Reservations]
+      responses:
+        "200":
+          description: Reservation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      operationId: modifyReservation
+      summary: Modify a dining reservation
+      tags: [Reservations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                dining_slot_id:
+                  type: string
+                  format: uuid
+                  description: New slot ID if changing time
+                party_size:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                special_requests:
+                  type: string
+                  maxLength: 2000
+                guest_name:
+                  type: string
+                  maxLength: 200
+                guest_phone:
+                  type: string
+      responses:
+        "200":
+          description: Reservation modified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Requested new slot is no longer available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    delete:
+      operationId: cancelReservation
+      summary: Cancel a dining reservation (cancellation policy applies)
+      tags: [Reservations]
+      responses:
+        "200":
+          description: Reservation cancelled with policy details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Reservation"
+                  - type: object
+                    properties:
+                      cancellation_fee:
+                        type: number
+                        format: double
+                        description: Fee charged per cancellation policy (0 if within free window)
+                      fee_currency:
+                        type: string
+                        pattern: "^[A-Z]{3}$"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Reservation is already cancelled or completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Notify (Future Waitlist)
+  # ──────────────────────────────────────────────
+  /notify:
+    post:
+      operationId: createNotifyRequest
+      summary: Create a notify request for a desired reservation
+      description: |
+        When no availability exists for the desired restaurant/date/time, guests
+        can create a notify request. The system monitors for cancellations and
+        new openings and alerts the guest when a match appears.
+      tags: [Notify]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [restaurant_id, party_size, target_date, time_window]
+              properties:
+                restaurant_id:
+                  type: string
+                  format: uuid
+                party_size:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                  example: 2
+                target_date:
+                  type: string
+                  format: date
+                  example: "2026-07-03"
+                time_window:
+                  type: object
+                  required: [start, end]
+                  properties:
+                    start:
+                      type: string
+                      pattern: "^\\d{2}:\\d{2}$"
+                      example: "18:00"
+                    end:
+                      type: string
+                      pattern: "^\\d{2}:\\d{2}$"
+                      example: "21:00"
+                preferences:
+                  type: object
+                  properties:
+                    seating:
+                      type: array
+                      items:
+                        type: string
+                      description: Preferred seating attributes
+                      example: ["counter", "window"]
+                    experience_id:
+                      type: string
+                      format: uuid
+                priority_level:
+                  type: string
+                  enum: [standard, priority, vip]
+                  default: "standard"
+                  description: Notification priority (may affect queue position)
+                auto_book:
+                  type: boolean
+                  default: false
+                  description: Automatically book the first matching slot
+                card_token:
+                  type: string
+                  description: Required if auto_book is true and restaurant requires card hold
+      responses:
+        "201":
+          description: Notify request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotifyRequest"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Active notify request already exists for this restaurant/date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    get:
+      operationId: listNotifyRequests
+      summary: List user's active notify requests
+      tags: [Notify]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, notified, booked, expired, cancelled]
+        - $ref: "#/components/parameters/CursorParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: Paginated list of notify requests
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, cursor, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NotifyRequest"
+                  cursor:
+                    $ref: "#/components/schemas/Cursor"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notify/{notifyId}:
+    parameters:
+      - $ref: "#/components/parameters/NotifyId"
+
+    delete:
+      operationId: cancelNotifyRequest
+      summary: Cancel a notify request
+      tags: [Notify]
+      responses:
+        "204":
+          description: Notify request cancelled
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Request has already been fulfilled or cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Waitlist
+  # ──────────────────────────────────────────────
+  /restaurants/{restaurantId}/waitlist:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+
+    post:
+      operationId: joinWaitlist
+      summary: Join the restaurant waitlist
+      tags: [Waitlist]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone, party_size]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                  example: "Jane Doe"
+                phone:
+                  type: string
+                  description: Phone number for SMS notifications
+                  example: "+14155551234"
+                party_size:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                  example: 2
+                seating_preference:
+                  type: array
+                  items:
+                    type: string
+                  example: ["patio", "booth"]
+                notes:
+                  type: string
+                  maxLength: 500
+                  example: "One high chair needed"
+                quoted_wait_min:
+                  type: integer
+                  description: Estimated wait time in minutes (set by host)
+      responses:
+        "201":
+          description: Added to waitlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          description: Restaurant waitlist is not active or is full
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      operationId: getWaitlist
+      summary: Get current waitlist (partner view)
+      tags: [Waitlist]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [waiting, notified, seated, cancelled, no_show]
+      responses:
+        "200":
+          description: Current waitlist
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WaitlistEntry"
+                  total:
+                    type: integer
+                    minimum: 0
+                  estimated_wait_min:
+                    type: integer
+                    description: Current estimated wait time for new entries
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /restaurants/{restaurantId}/waitlist/{waitlistId}:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+      - $ref: "#/components/parameters/WaitlistId"
+
+    patch:
+      operationId: updateWaitlistEntry
+      summary: Update waitlist entry status
+      tags: [Waitlist]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [notified, seated, cancelled, no_show]
+                table_id:
+                  type: string
+                  format: uuid
+                  description: Assigned table when seating the guest
+                notes:
+                  type: string
+                  maxLength: 500
+      responses:
+        "200":
+          description: Waitlist entry updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Invalid status transition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Messaging
+  # ──────────────────────────────────────────────
+  /restaurants/{restaurantId}/messages:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+
+    post:
+      operationId: sendMessage
+      summary: Send a message to or from restaurant
+      tags: [Messaging]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [thread_id, body]
+              properties:
+                thread_id:
+                  type: string
+                  format: uuid
+                  description: Existing thread ID, or omit to create a new thread
+                reservation_id:
+                  type: string
+                  format: uuid
+                  description: Associated reservation (required when creating new thread)
+                body:
+                  type: string
+                  minLength: 1
+                  maxLength: 5000
+                  example: "We're looking forward to our visit! Is there valet parking available?"
+                sender_type:
+                  type: string
+                  enum: [guest, restaurant]
+                  description: Inferred from auth token; explicit override for partner API
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /restaurants/{restaurantId}/messages/threads:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+
+    get:
+      operationId: listThreads
+      summary: List message threads for a restaurant
+      tags: [Messaging]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, closed]
+        - $ref: "#/components/parameters/CursorParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: Paginated list of message threads
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, cursor, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MessageThread"
+                  cursor:
+                    $ref: "#/components/schemas/Cursor"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /restaurants/{restaurantId}/messages/threads/{threadId}:
+    parameters:
+      - $ref: "#/components/parameters/RestaurantId"
+      - $ref: "#/components/parameters/ThreadId"
+
+    get:
+      operationId: getThreadMessages
+      summary: Get all messages in a thread
+      tags: [Messaging]
+      parameters:
+        - $ref: "#/components/parameters/CursorParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: Paginated messages in thread
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, cursor, total]
+                properties:
+                  thread:
+                    $ref: "#/components/schemas/MessageThread"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Message"
+                  cursor:
+                    $ref: "#/components/schemas/Cursor"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ──────────────────────────────────────────────
+  # Loyalty
+  # ──────────────────────────────────────────────
+  /loyalty/balance:
+    get:
+      operationId: getLoyaltyBalance
+      summary: Get user's dining loyalty points balance
+      tags: [Loyalty]
+      responses:
+        "200":
+          description: Current loyalty balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyBalance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /loyalty/history:
+    get:
+      operationId: getLoyaltyHistory
+      summary: Get dining loyalty points history
+      tags: [Loyalty]
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [earned, redeemed, expired, bonus, adjustment]
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - $ref: "#/components/parameters/CursorParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: Paginated loyalty history
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, cursor, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, type, points, description, created_at]
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        type:
+                          type: string
+                          enum: [earned, redeemed, expired, bonus, adjustment]
+                        points:
+                          type: integer
+                          description: Positive for earned/bonus, negative for redeemed/expired
+                        description:
+                          type: string
+                          example: "Earned from dinner at Sukiyabashi Jiro"
+                        reservation_id:
+                          type: string
+                          format: uuid
+                        restaurant_name:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                  cursor:
+                    $ref: "#/components/schemas/Cursor"
+                  total:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from Atlas One Identity Service
+
+  parameters:
+    RestaurantId:
+      name: restaurantId
+      in: path
+      required: true
+      description: Unique restaurant identifier
+      schema:
+        type: string
+        format: uuid
+
+    TableId:
+      name: tableId
+      in: path
+      required: true
+      description: Unique table identifier
+      schema:
+        type: string
+        format: uuid
+
+    PeriodId:
+      name: periodId
+      in: path
+      required: true
+      description: Unique service period identifier
+      schema:
+        type: string
+        format: uuid
+
+    ReservationId:
+      name: reservationId
+      in: path
+      required: true
+      description: Unique reservation identifier
+      schema:
+        type: string
+        format: uuid
+
+    NotifyId:
+      name: notifyId
+      in: path
+      required: true
+      description: Unique notify request identifier
+      schema:
+        type: string
+        format: uuid
+
+    WaitlistId:
+      name: waitlistId
+      in: path
+      required: true
+      description: Unique waitlist entry identifier
+      schema:
+        type: string
+        format: uuid
+
+    ThreadId:
+      name: threadId
+      in: path
+      required: true
+      description: Unique message thread identifier
+      schema:
+        type: string
+        format: uuid
+
+    CursorParam:
+      name: cursor
+      in: query
+      description: Opaque cursor for pagination
+      schema:
+        type: string
+
+    LimitParam:
+      name: limit
+      in: query
+      description: Maximum number of items to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    # ── Core Models ──────────────────────────────
+
+    Restaurant:
+      type: object
+      required: [id, venue_id, supplier_id, name, status, settings, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        venue_id:
+          type: string
+          format: uuid
+        supplier_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Sukiyabashi Jiro"
+        cuisine_types:
+          type: array
+          items:
+            type: string
+          example: ["japanese", "sushi", "omakase"]
+        price_tier:
+          type: integer
+          minimum: 1
+          maximum: 4
+          example: 4
+        status:
+          type: string
+          enum: [active, paused, closed]
+          example: "active"
+        settings:
+          $ref: "#/components/schemas/RestaurantSettings"
+        address:
+          type: object
+          properties:
+            line1:
+              type: string
+            line2:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            postal_code:
+              type: string
+            country:
+              type: string
+            latitude:
+              type: number
+              format: double
+            longitude:
+              type: number
+              format: double
+        phone:
+          type: string
+        website:
+          type: string
+          format: uri
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+        review_count:
+          type: integer
+          minimum: 0
+        table_count:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RestaurantSettings:
+      type: object
+      description: Operational settings for the restaurant
+      properties:
+        timezone:
+          type: string
+          description: IANA timezone
+          example: "Asia/Tokyo"
+        default_slot_duration_min:
+          type: integer
+          minimum: 15
+          maximum: 480
+          example: 90
+        max_party_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 12
+        booking_window_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          description: How far in advance guests can book
+          example: 30
+        min_advance_booking_hours:
+          type: integer
+          minimum: 0
+          description: Minimum hours before reservation time that booking is allowed
+          example: 2
+        auto_confirm:
+          type: boolean
+          default: true
+          description: Automatically confirm bookings or require manual confirmation
+        waitlist_enabled:
+          type: boolean
+          default: false
+        notifications:
+          type: object
+          properties:
+            sms_reminders:
+              type: boolean
+              default: true
+            email_reminders:
+              type: boolean
+              default: true
+            reminder_hours_before:
+              type: integer
+              default: 24
+
+    DiningTable:
+      type: object
+      required: [id, restaurant_id, label, min_party, max_party, section, active, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurant_id:
+          type: string
+          format: uuid
+        label:
+          type: string
+          example: "T12"
+        min_party:
+          type: integer
+          minimum: 1
+          example: 2
+        max_party:
+          type: integer
+          minimum: 1
+          example: 4
+        section:
+          type: string
+          example: "main_dining"
+        attributes:
+          type: array
+          items:
+            type: string
+          example: ["window", "booth", "quiet"]
+        active:
+          type: boolean
+          example: true
+        position:
+          type: object
+          properties:
+            x:
+              type: number
+            y:
+              type: number
+            floor:
+              type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ServicePeriod:
+      type: object
+      required: [id, restaurant_id, name, start_time, end_time, days_of_week, slot_duration_min, tables, active, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurant_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Dinner"
+        start_time:
+          type: string
+          pattern: "^\\d{2}:\\d{2}$"
+          example: "18:00"
+        end_time:
+          type: string
+          pattern: "^\\d{2}:\\d{2}$"
+          example: "22:00"
+        last_seating_time:
+          type: string
+          pattern: "^\\d{2}:\\d{2}$"
+          example: "21:00"
+        days_of_week:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 6
+          example: [1, 2, 3, 4, 5, 6]
+        slot_duration_min:
+          type: integer
+          example: 90
+        tables:
+          type: array
+          items:
+            type: string
+            format: uuid
+        pacing:
+          type: object
+          properties:
+            max_covers_per_slot:
+              type: integer
+            max_reservations_per_slot:
+              type: integer
+            slot_interval_min:
+              type: integer
+        active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Shift:
+      type: object
+      required: [id, restaurant_id, service_period_id, date, closed, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurant_id:
+          type: string
+          format: uuid
+        service_period_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+          example: "2026-07-03"
+        override_start_time:
+          type: string
+          pattern: "^\\d{2}:\\d{2}$"
+        override_end_time:
+          type: string
+          pattern: "^\\d{2}:\\d{2}$"
+        override_last_seating:
+          type: string
+          pattern: "^\\d{2}:\\d{2}$"
+        override_tables:
+          type: array
+          items:
+            type: string
+            format: uuid
+        override_pacing:
+          type: object
+          properties:
+            max_covers_per_slot:
+              type: integer
+            max_reservations_per_slot:
+              type: integer
+        closed:
+          type: boolean
+          example: false
+        notes:
+          type: string
+          example: "Private event 6-8pm, limited availability after"
+        reservation_count:
+          type: integer
+          minimum: 0
+          description: Number of reservations booked for this shift
+        covers_count:
+          type: integer
+          minimum: 0
+          description: Total covers booked for this shift
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    DiningSlot:
+      type: object
+      required: [dining_slot_id, start_at, duration_min, availability_status]
+      properties:
+        dining_slot_id:
+          type: string
+          format: uuid
+        start_at:
+          type: string
+          format: date-time
+          example: "2026-07-03T19:00:00+09:00"
+        duration_min:
+          type: integer
+          example: 90
+        availability_status:
+          type: string
+          enum: [available, limited, waitlist_only, unavailable]
+          example: "available"
+        price_tier:
+          type: string
+          enum: [standard, off_peak, peak, premium]
+          example: "peak"
+        table_type:
+          type: string
+          description: Type of seating available
+          example: "counter"
+        experience_id:
+          type: string
+          format: uuid
+          description: If this slot is for a specific dining experience
+        deposit_required:
+          type: boolean
+          default: false
+        deposit_amount:
+          type: number
+          format: double
+        deposit_currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+
+    Reservation:
+      type: object
+      required: [id, user_id, restaurant_id, dining_slot_id, status, party_size, start_at, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        restaurant_id:
+          type: string
+          format: uuid
+        restaurant_name:
+          type: string
+          example: "Sukiyabashi Jiro"
+        dining_slot_id:
+          type: string
+          format: uuid
+        experience_id:
+          type: string
+          format: uuid
+        trip_id:
+          type: string
+          format: uuid
+        confirmation_code:
+          type: string
+          example: "ATLAS-DIN-7829"
+        status:
+          type: string
+          enum: [pending, confirmed, seated, completed, cancelled, no_show]
+          example: "confirmed"
+        party_size:
+          type: integer
+          minimum: 1
+          example: 2
+        start_at:
+          type: string
+          format: date-time
+          example: "2026-07-03T19:00:00+09:00"
+        end_at:
+          type: string
+          format: date-time
+          example: "2026-07-03T20:30:00+09:00"
+        guest_name:
+          type: string
+          example: "Jane Doe"
+        guest_phone:
+          type: string
+        guest_email:
+          type: string
+          format: email
+        special_requests:
+          type: string
+          example: "Celebrating an anniversary. Nut allergy for one guest."
+        table_id:
+          type: string
+          format: uuid
+          description: Assigned table (may be assigned at seating time)
+        table_label:
+          type: string
+          example: "T12"
+        cancellation_policy:
+          type: object
+          properties:
+            free_cancellation_before:
+              type: string
+              format: date-time
+            cancellation_fee:
+              type: number
+              format: double
+            fee_currency:
+              type: string
+              pattern: "^[A-Z]{3}$"
+        card_hold_amount:
+          type: number
+          format: double
+          description: Amount held on card (if applicable)
+        experience_details:
+          type: object
+          properties:
+            title:
+              type: string
+            price_per_guest:
+              type: number
+              format: double
+            total_price:
+              type: number
+              format: double
+            currency:
+              type: string
+              pattern: "^[A-Z]{3}$"
+        loyalty_points_earned:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    NotifyRequest:
+      type: object
+      required: [id, user_id, restaurant_id, party_size, target_date, time_window, status, priority_level, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        restaurant_id:
+          type: string
+          format: uuid
+        restaurant_name:
+          type: string
+          example: "Sukiyabashi Jiro"
+        party_size:
+          type: integer
+          minimum: 1
+          example: 2
+        target_date:
+          type: string
+          format: date
+          example: "2026-07-03"
+        time_window:
+          type: object
+          required: [start, end]
+          properties:
+            start:
+              type: string
+              pattern: "^\\d{2}:\\d{2}$"
+              example: "18:00"
+            end:
+              type: string
+              pattern: "^\\d{2}:\\d{2}$"
+              example: "21:00"
+        preferences:
+          type: object
+          properties:
+            seating:
+              type: array
+              items:
+                type: string
+            experience_id:
+              type: string
+              format: uuid
+        status:
+          type: string
+          enum: [active, notified, booked, expired, cancelled]
+          example: "active"
+        priority_level:
+          type: string
+          enum: [standard, priority, vip]
+          example: "standard"
+        auto_book:
+          type: boolean
+          example: false
+        notified_at:
+          type: string
+          format: date-time
+          description: When the user was notified of availability
+        matched_slot_id:
+          type: string
+          format: uuid
+          description: Slot that matched the request (if notified or booked)
+        reservation_id:
+          type: string
+          format: uuid
+          description: Reservation created via auto-book (if booked)
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WaitlistEntry:
+      type: object
+      required: [id, restaurant_id, name, phone, party_size, status, position, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurant_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+          description: Linked Atlas One user (null for walk-ins without accounts)
+        name:
+          type: string
+          example: "Jane Doe"
+        phone:
+          type: string
+          example: "+14155551234"
+        party_size:
+          type: integer
+          minimum: 1
+          example: 2
+        status:
+          type: string
+          enum: [waiting, notified, seated, cancelled, no_show]
+          example: "waiting"
+        position:
+          type: integer
+          minimum: 1
+          description: Current position in queue
+          example: 3
+        seating_preference:
+          type: array
+          items:
+            type: string
+          example: ["patio", "booth"]
+        notes:
+          type: string
+          example: "One high chair needed"
+        quoted_wait_min:
+          type: integer
+          description: Estimated wait time given at check-in
+          example: 25
+        actual_wait_min:
+          type: integer
+          description: Actual time waited (populated when seated)
+        table_id:
+          type: string
+          format: uuid
+          description: Assigned table (populated when seated)
+        notified_at:
+          type: string
+          format: date-time
+        seated_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    DiningExperience:
+      type: object
+      required: [id, restaurant_id, title, description, price_per_guest, currency, min_party, max_party, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurant_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: "Chef's Omakase Experience"
+        description:
+          type: string
+          example: "A 20-course omakase journey featuring seasonal ingredients from Tsukiji Market"
+        price_per_guest:
+          type: number
+          format: double
+          example: 350.00
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          example: "USD"
+        min_party:
+          type: integer
+          minimum: 1
+          example: 1
+        max_party:
+          type: integer
+          minimum: 1
+          example: 8
+        duration_min:
+          type: integer
+          example: 120
+        includes:
+          type: array
+          items:
+            type: string
+          example: ["20-course omakase", "Sake pairing", "Amuse bouche"]
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+        available_service_periods:
+          type: array
+          items:
+            type: string
+            format: uuid
+        available_from:
+          type: string
+          format: date
+        available_until:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [active, paused, archived]
+          example: "active"
+        booking_count:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    DiningPolicy:
+      type: object
+      required: [id, restaurant_id, policy_type, active, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurant_id:
+          type: string
+          format: uuid
+        policy_type:
+          type: string
+          enum: [cancellation, card_hold, no_show, dress_code, age_restriction]
+          example: "cancellation"
+        card_hold:
+          type: object
+          properties:
+            required:
+              type: boolean
+            amount_per_guest:
+              type: number
+              format: double
+            currency:
+              type: string
+              pattern: "^[A-Z]{3}$"
+            hold_message:
+              type: string
+        cancellation_window:
+          type: object
+          properties:
+            free_cancellation_hours:
+              type: integer
+            late_cancel_fee_per_guest:
+              type: number
+              format: double
+            currency:
+              type: string
+              pattern: "^[A-Z]{3}$"
+        no_show_fee:
+          type: object
+          properties:
+            fee_per_guest:
+              type: number
+              format: double
+            currency:
+              type: string
+              pattern: "^[A-Z]{3}$"
+        description:
+          type: string
+          description: Human-readable policy text
+        active:
+          type: boolean
+          example: true
+        effective_from:
+          type: string
+          format: date
+        effective_until:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    MessageThread:
+      type: object
+      required: [id, restaurant_id, user_id, status, message_count, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurant_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        reservation_id:
+          type: string
+          format: uuid
+        guest_name:
+          type: string
+          example: "Jane Doe"
+        restaurant_name:
+          type: string
+          example: "Sukiyabashi Jiro"
+        status:
+          type: string
+          enum: [open, closed]
+          example: "open"
+        subject:
+          type: string
+          example: "Reservation for Jul 3"
+        message_count:
+          type: integer
+          minimum: 0
+        last_message_at:
+          type: string
+          format: date-time
+        last_message_preview:
+          type: string
+          maxLength: 200
+        unread_count:
+          type: integer
+          minimum: 0
+          description: Unread messages for the current viewer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Message:
+      type: object
+      required: [id, thread_id, sender_type, sender_id, body, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        thread_id:
+          type: string
+          format: uuid
+        sender_type:
+          type: string
+          enum: [guest, restaurant, system]
+        sender_id:
+          type: string
+          format: uuid
+        sender_name:
+          type: string
+          example: "Jane Doe"
+        body:
+          type: string
+          example: "We're looking forward to our visit! Is there valet parking available?"
+        read:
+          type: boolean
+          description: Whether this message has been read by the recipient
+        read_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    LoyaltyBalance:
+      type: object
+      required: [user_id, points_balance, tier, lifetime_points, updated_at]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        points_balance:
+          type: integer
+          minimum: 0
+          description: Current redeemable points
+          example: 2450
+        tier:
+          type: string
+          enum: [bronze, silver, gold, platinum]
+          example: "gold"
+        lifetime_points:
+          type: integer
+          minimum: 0
+          description: Total points ever earned
+          example: 12800
+        points_expiring_soon:
+          type: integer
+          minimum: 0
+          description: Points expiring in the next 90 days
+          example: 200
+        expiry_date:
+          type: string
+          format: date
+          description: Date when the next batch of points expires
+        tier_progress:
+          type: object
+          properties:
+            current_tier_points:
+              type: integer
+              description: Points earned in current tier cycle
+            next_tier_threshold:
+              type: integer
+              description: Points needed to reach the next tier
+            next_tier:
+              type: string
+              enum: [silver, gold, platinum]
+        reservation_count_ytd:
+          type: integer
+          minimum: 0
+          description: Number of completed reservations this year
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Shared ───────────────────────────────────
+
+    Cursor:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Cursor to fetch the next page (null if no more results)
+        prev:
+          type: string
+          description: Cursor to fetch the previous page (null if on first page)
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              description: Human-readable error description
+              example: "party_size exceeds table capacity"
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  reason:
+                    type: string
+                  value:
+                    description: The invalid value that was provided
+
+  responses:
+    BadRequest:
+      description: Invalid request syntax or malformed body
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "BAD_REQUEST"
+              message: "Request body could not be parsed"
+
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "UNAUTHORIZED"
+              message: "Bearer token is missing or expired"
+
+    Forbidden:
+      description: Authenticated user lacks permission for this action
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "FORBIDDEN"
+              message: "You do not have permission to access this resource"
+
+    NotFound:
+      description: Requested resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "NOT_FOUND"
+              message: "Resource not found"
+
+    UnprocessableEntity:
+      description: Request body is syntactically valid but semantically incorrect
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Validation failed"
+              details:
+                - field: "party_size"
+                  reason: "exceeds maximum table capacity of 8"
+                  value: 12

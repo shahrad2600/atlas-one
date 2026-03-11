@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "commerce.reservation.confirmed",
+  "description": "Emitted when a reservation is confirmed with the supplier",
+  "allOf": [{ "$ref": "../envelope.json" }],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "reservation_id",
+        "reservation_type",
+        "user_id",
+        "product_id",
+        "supplier_id",
+        "start_at",
+        "end_at",
+        "party_size",
+        "price_paid",
+        "currency",
+        "status"
+      ],
+      "properties": {
+        "reservation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the reservation"
+        },
+        "reservation_type": {
+          "type": "string",
+          "enum": [
+            "dining",
+            "experience",
+            "stay",
+            "rental",
+            "cruise",
+            "flight",
+            "insurance",
+            "ancillary"
+          ],
+          "description": "Category of the reservation"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who holds the reservation"
+        },
+        "trip_id": {
+          "type": ["string", "null"],
+          "format": "uuid",
+          "description": "Associated trip, if applicable"
+        },
+        "order_id": {
+          "type": ["string", "null"],
+          "format": "uuid",
+          "description": "Associated order, if applicable"
+        },
+        "product_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Product from the Travel Graph"
+        },
+        "slot_id": {
+          "type": ["string", "null"],
+          "format": "uuid",
+          "description": "Inventory slot reserved, if applicable"
+        },
+        "supplier_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Supplier fulfilling the reservation"
+        },
+        "venue_id": {
+          "type": ["string", "null"],
+          "format": "uuid",
+          "description": "Venue where the reservation takes place, if applicable"
+        },
+        "external_provider": {
+          "type": ["string", "null"],
+          "description": "External booking provider name, if applicable"
+        },
+        "external_confirmation_code": {
+          "type": ["string", "null"],
+          "description": "Confirmation code from the external provider"
+        },
+        "start_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Reservation start time"
+        },
+        "end_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Reservation end time"
+        },
+        "party_size": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of guests or travelers"
+        },
+        "price_paid": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Amount paid for the reservation"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current reservation status (e.g., confirmed, pending)"
+        }
+      }
+    }
+  }
+}
