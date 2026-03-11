@@ -1,0 +1,757 @@
+###############################################################################
+# Atlas One — Docker Compose (Production)
+# Domain: sarve.com | DNS: IONOS
+###############################################################################
+
+name: atlas-one-prod
+
+x-service-common: &service-common
+  restart: unless-stopped
+  networks:
+    - atlas-network
+  environment: &service-env
+    NODE_ENV: production
+    DATABASE_URL: postgresql://${DATABASE_USER:-atlas}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME:-atlas_prod}?sslmode=disable
+    REDIS_URL: redis://redis:6379
+    JWT_SECRET: ${JWT_SECRET}
+    JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+    CORS_ORIGIN: ${CORS_ORIGIN:-https://sarve.com}
+
+x-service-depends: &service-depends
+  postgres:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+
+###############################################################################
+# Infrastructure
+###############################################################################
+
+services:
+  # ── PostgreSQL 15 with pgvector ──────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: atlas-prod-postgres
+    restart: unless-stopped
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-atlas_prod}
+      POSTGRES_USER: ${DATABASE_USER:-atlas}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-atlas} -d ${DATABASE_NAME:-atlas_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - atlas-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # ── Redis 7 ──────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: atlas-prod-redis
+    restart: unless-stopped
+    expose:
+      - "6379"
+    command: >
+      redis-server
+        --appendonly yes
+        --maxmemory 512mb
+        --maxmemory-policy allkeys-lru
+        --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - atlas-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  ###########################################################################
+  # Microservices (21)
+  ###########################################################################
+
+  # ── identity-service (4001) ──────────────────────────────────────────────
+  identity-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: identity-service
+    container_name: atlas-prod-identity
+    expose:
+      - "4001"
+    environment:
+      <<: *service-env
+      PORT: "4001"
+      SERVICE_NAME: identity-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── commerce-service (4002) ──────────────────────────────────────────────
+  commerce-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: commerce-service
+    container_name: atlas-prod-commerce
+    expose:
+      - "4002"
+    environment:
+      <<: *service-env
+      PORT: "4002"
+      SERVICE_NAME: commerce-service
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── dining-service (4003) ────────────────────────────────────────────────
+  dining-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: dining-service
+    container_name: atlas-prod-dining
+    expose:
+      - "4003"
+    environment:
+      <<: *service-env
+      PORT: "4003"
+      SERVICE_NAME: dining-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── trip-service (4004) ──────────────────────────────────────────────────
+  trip-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: trip-service
+    container_name: atlas-prod-trip
+    expose:
+      - "4004"
+    environment:
+      <<: *service-env
+      PORT: "4004"
+      SERVICE_NAME: trip-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── travel-graph-service (4005) ──────────────────────────────────────────
+  travel-graph-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: travel-graph-service
+    container_name: atlas-prod-travel-graph
+    expose:
+      - "4005"
+    environment:
+      <<: *service-env
+      PORT: "4005"
+      SERVICE_NAME: travel-graph-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── search-service (4006) ────────────────────────────────────────────────
+  search-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: search-service
+    container_name: atlas-prod-search
+    expose:
+      - "4006"
+    environment:
+      <<: *service-env
+      PORT: "4006"
+      SERVICE_NAME: search-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── stay-service (4007) ──────────────────────────────────────────────────
+  stay-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: stay-service
+    container_name: atlas-prod-stay
+    expose:
+      - "4007"
+    environment:
+      <<: *service-env
+      PORT: "4007"
+      SERVICE_NAME: stay-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── flight-service (4008) ────────────────────────────────────────────────
+  flight-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: flight-service
+    container_name: atlas-prod-flight
+    expose:
+      - "4008"
+    environment:
+      <<: *service-env
+      PORT: "4008"
+      SERVICE_NAME: flight-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── experiences-service (4009) ───────────────────────────────────────────
+  experiences-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: experiences-service
+    container_name: atlas-prod-experiences
+    expose:
+      - "4009"
+    environment:
+      <<: *service-env
+      PORT: "4009"
+      SERVICE_NAME: experiences-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4009/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── insurance-service (4010) ─────────────────────────────────────────────
+  insurance-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: insurance-service
+    container_name: atlas-prod-insurance
+    expose:
+      - "4010"
+    environment:
+      <<: *service-env
+      PORT: "4010"
+      SERVICE_NAME: insurance-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── finance-service (4011) ───────────────────────────────────────────────
+  finance-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: finance-service
+    container_name: atlas-prod-finance
+    expose:
+      - "4011"
+    environment:
+      <<: *service-env
+      PORT: "4011"
+      SERVICE_NAME: finance-service
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4011/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── messaging-service (4012) ─────────────────────────────────────────────
+  messaging-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: messaging-service
+    container_name: atlas-prod-messaging
+    expose:
+      - "4012"
+    environment:
+      <<: *service-env
+      PORT: "4012"
+      SERVICE_NAME: messaging-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4012/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── luxury-service (4013) ────────────────────────────────────────────────
+  luxury-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: luxury-service
+    container_name: atlas-prod-luxury
+    expose:
+      - "4013"
+    environment:
+      <<: *service-env
+      PORT: "4013"
+      SERVICE_NAME: luxury-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4013/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── trust-service (4014) ─────────────────────────────────────────────────
+  trust-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: trust-service
+    container_name: atlas-prod-trust
+    expose:
+      - "4014"
+    environment:
+      <<: *service-env
+      PORT: "4014"
+      SERVICE_NAME: trust-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4014/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── ai-orchestrator (4015) ───────────────────────────────────────────────
+  ai-orchestrator:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: ai-orchestrator
+    container_name: atlas-prod-ai-orchestrator
+    expose:
+      - "4015"
+    environment:
+      <<: *service-env
+      PORT: "4015"
+      SERVICE_NAME: ai-orchestrator
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4015/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── social-service (4016) ────────────────────────────────────────────────
+  social-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: social-service
+    container_name: atlas-prod-social
+    expose:
+      - "4016"
+    environment:
+      <<: *service-env
+      PORT: "4016"
+      SERVICE_NAME: social-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4016/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── loyalty-service (4017) ───────────────────────────────────────────────
+  loyalty-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: loyalty-service
+    container_name: atlas-prod-loyalty
+    expose:
+      - "4017"
+    environment:
+      <<: *service-env
+      PORT: "4017"
+      SERVICE_NAME: loyalty-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4017/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── business-service (4018) ──────────────────────────────────────────────
+  business-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: business-service
+    container_name: atlas-prod-business
+    expose:
+      - "4018"
+    environment:
+      <<: *service-env
+      PORT: "4018"
+      SERVICE_NAME: business-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4018/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── content-service (4019) ───────────────────────────────────────────────
+  content-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: content-service
+    container_name: atlas-prod-content
+    expose:
+      - "4019"
+    environment:
+      <<: *service-env
+      PORT: "4019"
+      SERVICE_NAME: content-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4019/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── rental-service (4020) ────────────────────────────────────────────────
+  rental-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: rental-service
+    container_name: atlas-prod-rental
+    expose:
+      - "4020"
+    environment:
+      <<: *service-env
+      PORT: "4020"
+      SERVICE_NAME: rental-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4020/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── cruise-service (4021) ────────────────────────────────────────────────
+  cruise-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: cruise-service
+    container_name: atlas-prod-cruise
+    expose:
+      - "4021"
+    environment:
+      <<: *service-env
+      PORT: "4021"
+      SERVICE_NAME: cruise-service
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4021/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ###########################################################################
+  # Next.js Apps (3)
+  ###########################################################################
+
+  # ── web (sarve.com) ──────────────────────────────────────────────────────
+  web:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: atlas-prod-web
+    expose:
+      - "3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      NEXT_PUBLIC_API_URL: https://api.sarve.com
+      NEXT_PUBLIC_SITE_URL: https://sarve.com
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ── admin (admin.sarve.com) ──────────────────────────────────────────────
+  admin:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    container_name: atlas-prod-admin
+    expose:
+      - "3001"
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      NEXT_PUBLIC_API_URL: https://api.sarve.com
+      NEXT_PUBLIC_SITE_URL: https://admin.sarve.com
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ── concierge (concierge.sarve.com) ──────────────────────────────────────
+  concierge:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: apps/concierge/Dockerfile
+    container_name: atlas-prod-concierge
+    expose:
+      - "3002"
+    environment:
+      NODE_ENV: production
+      PORT: "3002"
+      NEXT_PUBLIC_API_URL: https://api.sarve.com
+      NEXT_PUBLIC_SITE_URL: https://concierge.sarve.com
+    depends_on:
+      <<: *service-depends
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  ###########################################################################
+  # Reverse Proxy
+  ###########################################################################
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: atlas-prod-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      - web
+      - admin
+      - concierge
+      - identity-service
+      - commerce-service
+      - dining-service
+      - trip-service
+      - travel-graph-service
+      - search-service
+      - stay-service
+      - flight-service
+      - experiences-service
+      - insurance-service
+      - finance-service
+      - messaging-service
+      - luxury-service
+      - trust-service
+      - ai-orchestrator
+      - social-service
+      - loyalty-service
+      - business-service
+      - content-service
+      - rental-service
+      - cruise-service
+    networks:
+      - atlas-network
+
+  # ── Certbot (Let's Encrypt) ──────────────────────────────────────────────
+  certbot:
+    image: certbot/certbot:latest
+    container_name: atlas-prod-certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    # Initial certificate generation:
+    #   docker compose -f docker-compose.prod.yml run --rm certbot certonly \
+    #     --webroot -w /var/www/certbot \
+    #     -d sarve.com -d www.sarve.com \
+    #     -d admin.sarve.com -d concierge.sarve.com \
+    #     -d api.sarve.com \
+    #     --email admin@sarve.com --agree-tos --no-eff-email
+    #
+    # Renewal (run via cron every 12 hours):
+    #   docker compose -f docker-compose.prod.yml run --rm certbot renew
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - atlas-network
+
+###############################################################################
+# Volumes & Networks
+###############################################################################
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  certbot_conf:
+    driver: local
+  certbot_www:
+    driver: local
+
+networks:
+  atlas-network:
+    driver: bridge
