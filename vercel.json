@@ -3,5 +3,5 @@
   "installCommand": "pnpm install",
   "buildCommand": "pnpm --filter @atlas/web build",
   "outputDirectory": "apps/web/.next",
-  "framework": "nextjs"
+  "framework": null
 }
