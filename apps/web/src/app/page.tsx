@@ -45,7 +45,7 @@ const staggerSlow = {
 
 /* ── Curated Destinations ─────────────────────────── */
 const trendingDestinations = [
-  { id: 'serengeti', city: 'Serengeti', country: 'Tanzania', image: 'https://images.unsplash.com/photo-1516426122078-c23e76b9cefd?w=600&q=85', reviews: 28750 },
+  { id: 'serengeti', city: 'Serengeti', country: 'Tanzania', image: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=600&q=85', reviews: 28750 },
   { id: 'marrakech', city: 'Marrakech', country: 'Morocco', image: 'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=600&q=85', reviews: 35890 },
   { id: 'cairo', city: 'Cairo', country: 'Egypt', image: 'https://images.unsplash.com/photo-1572252009286-268acec5ca0a?w=600&q=85', reviews: 41320 },
   { id: 'cape-town', city: 'Cape Town', country: 'South Africa', image: 'https://images.unsplash.com/photo-1580060839134-75a5edca2e99?w=600&q=85', reviews: 48210 },
