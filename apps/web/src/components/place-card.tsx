@@ -34,7 +34,7 @@ function PlaceCard({
       <motion.div
         whileHover={{ y: -4 }}
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        className="rounded-xl border border-[#EDE4D8] bg-white overflow-hidden shadow-elevation-1 hover:shadow-elevation-3 transition-shadow duration-300 dark:bg-[#1A1610] dark:border-[#332C22]"
+        className="rounded-xl border border-[#E8E6E1] bg-white overflow-hidden shadow-elevation-1 hover:shadow-elevation-3 transition-shadow duration-300 dark:bg-[#1A1A1A] dark:border-[#2A2A2A]"
       >
         <div className="relative aspect-[4/3] bg-safari-100 dark:bg-safari-900 overflow-hidden">
           <Image
@@ -52,17 +52,17 @@ function PlaceCard({
           )}
         </div>
         <div className="p-4">
-          <h3 className="font-semibold text-[#1C1108] dark:text-[#F8F4ED] group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors line-clamp-1">
+          <h3 className="font-semibold text-[#1A1A1A] dark:text-[#F5F3EF] group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors line-clamp-1">
             {title}
           </h3>
-          <div className="flex items-center gap-1 mt-1 text-sm text-[#1C1108]/60 dark:text-[#F8F4ED]/60">
+          <div className="flex items-center gap-1 mt-1 text-sm text-[#1A1A1A]/60 dark:text-[#F5F3EF]/60">
             <MapPin className="h-3.5 w-3.5" />
             <span className="line-clamp-1">{location}</span>
           </div>
           <div className="flex items-center justify-between mt-2">
             <Rating value={rating} />
             {price && (
-              <span className="text-sm font-semibold text-[#1C1108] dark:text-[#F8F4ED]">
+              <span className="text-sm font-semibold text-[#1A1A1A] dark:text-[#F5F3EF]">
                 {price}
               </span>
             )}

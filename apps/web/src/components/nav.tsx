@@ -75,8 +75,8 @@ export default function Nav() {
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-40 border-b transition-all duration-300',
-        'bg-white/90 dark:bg-[#0D0A05]/90 backdrop-blur-xl',
-        'border-[#EDE4D8]/80 dark:border-[#332C22]/80',
+        'bg-white/90 dark:bg-[#0F0F0F]/90 backdrop-blur-xl',
+        'border-[#E8E6E1]/80 dark:border-[#2A2A2A]/80',
         scrolled && 'shadow-elevation-2',
       )}
     >
@@ -100,7 +100,7 @@ export default function Nav() {
                   'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                   pathname === cat.href
                     ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300'
-                    : 'text-[#1C1108]/70 hover:bg-brand-50 hover:text-brand-700 dark:text-[#F8F4ED]/70 dark:hover:bg-brand-900/30 dark:hover:text-brand-300',
+                    : 'text-[#1A1A1A]/70 hover:bg-brand-50 hover:text-brand-700 dark:text-[#F5F3EF]/70 dark:hover:bg-brand-900/30 dark:hover:text-brand-300',
                 )}
               >
                 {Icon && <Icon className="h-4 w-4" />}
@@ -113,7 +113,7 @@ export default function Nav() {
         <div className="flex items-center gap-2">
           <button
             onClick={toggleTheme}
-            className="rounded-lg p-2 text-[#1C1108]/70 hover:bg-brand-50 dark:text-[#F8F4ED]/70 dark:hover:bg-brand-900/30 transition-colors"
+            className="rounded-lg p-2 text-[#1A1A1A]/70 hover:bg-brand-50 dark:text-[#F5F3EF]/70 dark:hover:bg-brand-900/30 transition-colors"
             aria-label="Toggle dark mode"
           >
             {theme === 'dark' ? (
@@ -134,12 +134,12 @@ export default function Nav() {
                   src={user.avatarUrl}
                   size="sm"
                 />
-                <span className="text-sm font-medium text-[#1C1108] dark:text-[#F8F4ED] max-w-[120px] truncate">
+                <span className="text-sm font-medium text-[#1A1A1A] dark:text-[#F5F3EF] max-w-[120px] truncate">
                   {user.displayName}
                 </span>
                 <ChevronDown
                   className={cn(
-                    'h-4 w-4 text-[#1C1108]/50 transition-transform duration-200',
+                    'h-4 w-4 text-[#1A1A1A]/50 transition-transform duration-200',
                     profileOpen && 'rotate-180',
                   )}
                 />
@@ -152,20 +152,20 @@ export default function Nav() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -4 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="absolute right-0 top-full mt-1 w-56 rounded-xl border border-[#EDE4D8] bg-white py-1 shadow-elevation-3 dark:border-[#332C22] dark:bg-[#1A1610]"
+                    className="absolute right-0 top-full mt-1 w-56 rounded-xl border border-[#E8E6E1] bg-white py-1 shadow-elevation-3 dark:border-[#2A2A2A] dark:bg-[#1A1A1A]"
                   >
-                    <div className="border-b border-[#EDE4D8]/60 dark:border-[#332C22]/60 px-4 py-3">
-                      <p className="text-sm font-medium text-[#1C1108] dark:text-[#F8F4ED]">
+                    <div className="border-b border-[#E8E6E1]/60 dark:border-[#2A2A2A]/60 px-4 py-3">
+                      <p className="text-sm font-medium text-[#1A1A1A] dark:text-[#F5F3EF]">
                         {user.displayName}
                       </p>
-                      <p className="text-xs text-[#1C1108]/50 dark:text-[#F8F4ED]/50">
+                      <p className="text-xs text-[#1A1A1A]/50 dark:text-[#F5F3EF]/50">
                         {user.email}
                       </p>
                     </div>
                     <Link
                       href="/profile"
                       onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-[#1C1108] hover:bg-brand-50 dark:text-[#F8F4ED] dark:hover:bg-brand-900/20"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-[#1A1A1A] hover:bg-brand-50 dark:text-[#F5F3EF] dark:hover:bg-brand-900/20"
                     >
                       <User className="h-4 w-4" />
                       Profile
@@ -173,7 +173,7 @@ export default function Nav() {
                     <Link
                       href="/trips"
                       onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-[#1C1108] hover:bg-brand-50 dark:text-[#F8F4ED] dark:hover:bg-brand-900/20"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-[#1A1A1A] hover:bg-brand-50 dark:text-[#F5F3EF] dark:hover:bg-brand-900/20"
                     >
                       <MapPin className="h-4 w-4" />
                       My Trips
@@ -181,7 +181,7 @@ export default function Nav() {
                     <Link
                       href="/loyalty"
                       onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-[#1C1108] hover:bg-brand-50 dark:text-[#F8F4ED] dark:hover:bg-brand-900/20"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-[#1A1A1A] hover:bg-brand-50 dark:text-[#F5F3EF] dark:hover:bg-brand-900/20"
                     >
                       <Award className="h-4 w-4" />
                       Loyalty
@@ -189,12 +189,12 @@ export default function Nav() {
                     <Link
                       href="/settings"
                       onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-[#1C1108] hover:bg-brand-50 dark:text-[#F8F4ED] dark:hover:bg-brand-900/20"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-[#1A1A1A] hover:bg-brand-50 dark:text-[#F5F3EF] dark:hover:bg-brand-900/20"
                     >
                       <Settings className="h-4 w-4" />
                       Settings
                     </Link>
-                    <div className="border-t border-[#EDE4D8]/60 dark:border-[#332C22]/60">
+                    <div className="border-t border-[#E8E6E1]/60 dark:border-[#2A2A2A]/60">
                       <button
                         onClick={() => {
                           setProfileOpen(false);
@@ -214,13 +214,13 @@ export default function Nav() {
             <div className="hidden md:flex items-center gap-2">
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-[#1C1108] hover:bg-brand-50 dark:text-[#F8F4ED] dark:hover:bg-brand-900/30 transition-colors"
+                className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-[#1A1A1A] hover:bg-brand-50 dark:text-[#F5F3EF] dark:hover:bg-brand-900/30 transition-colors"
               >
                 Log In
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600 dark:bg-brand-400 dark:hover:bg-brand-500 dark:text-[#0D0A05] transition-colors"
+                className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600 dark:bg-brand-400 dark:hover:bg-brand-500 dark:text-[#0F0F0F] transition-colors"
               >
                 Sign Up
               </Link>
@@ -228,7 +228,7 @@ export default function Nav() {
           )}
 
           <button
-            className="md:hidden rounded-lg p-2 text-[#1C1108]/70 hover:bg-brand-50 dark:text-[#F8F4ED]/70 dark:hover:bg-brand-900/30 transition-colors"
+            className="md:hidden rounded-lg p-2 text-[#1A1A1A]/70 hover:bg-brand-50 dark:text-[#F5F3EF]/70 dark:hover:bg-brand-900/30 transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           >
@@ -257,7 +257,7 @@ export default function Nav() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed top-16 right-0 bottom-0 z-40 w-72 overflow-y-auto border-l border-[#EDE4D8] bg-white dark:border-[#332C22] dark:bg-[#0D0A05] md:hidden"
+              className="fixed top-16 right-0 bottom-0 z-40 w-72 overflow-y-auto border-l border-[#E8E6E1] bg-white dark:border-[#2A2A2A] dark:bg-[#0F0F0F] md:hidden"
             >
               <div className="p-4">
                 {user && (
@@ -268,10 +268,10 @@ export default function Nav() {
                       size="md"
                     />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#1C1108] dark:text-[#F8F4ED] truncate">
+                      <p className="text-sm font-medium text-[#1A1A1A] dark:text-[#F5F3EF] truncate">
                         {user.displayName}
                       </p>
-                      <p className="text-xs text-[#1C1108]/50 dark:text-[#F8F4ED]/50 truncate">
+                      <p className="text-xs text-[#1A1A1A]/50 dark:text-[#F5F3EF]/50 truncate">
                         {user.email}
                       </p>
                     </div>
@@ -292,7 +292,7 @@ export default function Nav() {
                           'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                           pathname === cat.href
                             ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300'
-                            : 'text-[#1C1108]/70 hover:bg-brand-50 dark:text-[#F8F4ED]/70 dark:hover:bg-brand-900/30',
+                            : 'text-[#1A1A1A]/70 hover:bg-brand-50 dark:text-[#F5F3EF]/70 dark:hover:bg-brand-900/30',
                         )}
                       >
                         {Icon && <Icon className="h-4 w-4" />}
@@ -310,25 +310,25 @@ export default function Nav() {
                     <nav className="space-y-1">
                       <Link
                         href="/profile"
-                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#1C1108]/70 hover:bg-brand-50 dark:text-[#F8F4ED]/70 dark:hover:bg-brand-900/30"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#1A1A1A]/70 hover:bg-brand-50 dark:text-[#F5F3EF]/70 dark:hover:bg-brand-900/30"
                       >
                         <User className="h-4 w-4" /> Profile
                       </Link>
                       <Link
                         href="/trips"
-                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#1C1108]/70 hover:bg-brand-50 dark:text-[#F8F4ED]/70 dark:hover:bg-brand-900/30"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#1A1A1A]/70 hover:bg-brand-50 dark:text-[#F5F3EF]/70 dark:hover:bg-brand-900/30"
                       >
                         <MapPin className="h-4 w-4" /> My Trips
                       </Link>
                       <Link
                         href="/loyalty"
-                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#1C1108]/70 hover:bg-brand-50 dark:text-[#F8F4ED]/70 dark:hover:bg-brand-900/30"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#1A1A1A]/70 hover:bg-brand-50 dark:text-[#F5F3EF]/70 dark:hover:bg-brand-900/30"
                       >
                         <Award className="h-4 w-4" /> Loyalty
                       </Link>
                       <Link
                         href="/settings"
-                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#1C1108]/70 hover:bg-brand-50 dark:text-[#F8F4ED]/70 dark:hover:bg-brand-900/30"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#1A1A1A]/70 hover:bg-brand-50 dark:text-[#F5F3EF]/70 dark:hover:bg-brand-900/30"
                       >
                         <Settings className="h-4 w-4" /> Settings
                       </Link>
@@ -344,13 +344,13 @@ export default function Nav() {
                   <div className="mt-6 space-y-2">
                     <Link
                       href="/login"
-                      className="flex w-full items-center justify-center rounded-lg border border-[#EDE4D8] bg-white px-4 py-2 text-sm font-medium text-[#1C1108] hover:bg-brand-50 dark:border-[#332C22] dark:bg-[#1A1610] dark:text-[#F8F4ED] dark:hover:bg-brand-900/30 transition-colors"
+                      className="flex w-full items-center justify-center rounded-lg border border-[#E8E6E1] bg-white px-4 py-2 text-sm font-medium text-[#1A1A1A] hover:bg-brand-50 dark:border-[#2A2A2A] dark:bg-[#1A1A1A] dark:text-[#F5F3EF] dark:hover:bg-brand-900/30 transition-colors"
                     >
                       Log In
                     </Link>
                     <Link
                       href="/signup"
-                      className="flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 dark:bg-brand-400 dark:hover:bg-brand-500 dark:text-[#0D0A05] transition-colors"
+                      className="flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 dark:bg-brand-400 dark:hover:bg-brand-500 dark:text-[#0F0F0F] transition-colors"
                     >
                       Sign Up
                     </Link>

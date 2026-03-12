@@ -6,13 +6,13 @@ import { cn } from '@/lib/utils';
 
 const variants = {
   default:
-    'bg-brand-500 text-white hover:bg-brand-600 dark:bg-brand-400 dark:hover:bg-brand-500 dark:text-[#0D0A05] focus-ring',
+    'bg-brand-500 text-white hover:bg-brand-600 dark:bg-brand-400 dark:hover:bg-brand-500 dark:text-[#0F0F0F] focus-ring',
   secondary:
-    'bg-safari-100 text-[#1C1108] hover:bg-safari-200 dark:bg-safari-800 dark:text-[#F8F4ED] dark:hover:bg-safari-700 focus-ring',
+    'bg-safari-100 text-[#1A1A1A] hover:bg-safari-200 dark:bg-safari-800 dark:text-[#F5F3EF] dark:hover:bg-safari-700 focus-ring',
   outline:
-    'border border-[#EDE4D8] bg-white text-[#1C1108] hover:bg-brand-50 dark:border-[#332C22] dark:bg-[#1A1610] dark:text-[#F8F4ED] dark:hover:bg-safari-800 focus-ring',
+    'border border-[#E8E6E1] bg-white text-[#1A1A1A] hover:bg-brand-50 dark:border-[#2A2A2A] dark:bg-[#1A1A1A] dark:text-[#F5F3EF] dark:hover:bg-safari-800 focus-ring',
   ghost:
-    'text-[#1C1108] hover:bg-safari-100 dark:text-[#F8F4ED] dark:hover:bg-safari-800 focus-ring',
+    'text-[#1A1A1A] hover:bg-safari-100 dark:text-[#F5F3EF] dark:hover:bg-safari-800 focus-ring',
   danger:
     'bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 focus-ring',
 };

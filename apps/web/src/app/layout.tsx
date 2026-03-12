@@ -52,10 +52,10 @@ export default function RootLayout({
                   fontSize: '14px',
                   fontWeight: 500,
                   background: '#FFFFFF',
-                  color: '#1C1108',
-                  border: '1px solid rgba(196, 154, 47, 0.15)',
+                  color: '#1A1A1A',
+                  border: '1px solid rgba(184, 148, 95, 0.12)',
                   boxShadow:
-                    '0 10px 15px -3px rgb(28 17 8 / 0.07), 0 4px 6px -4px rgb(28 17 8 / 0.04)',
+                    '0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.03)',
                 },
                 success: {
                   iconTheme: {
