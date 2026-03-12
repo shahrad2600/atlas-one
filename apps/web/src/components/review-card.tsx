@@ -16,6 +16,7 @@ interface ReviewCardProps {
   helpful: number;
   className?: string;
   animated?: boolean;
+  variant?: 'default' | 'overlay';
 }
 
 function ReviewCard({
@@ -28,26 +29,44 @@ function ReviewCard({
   helpful,
   className,
   animated,
+  variant = 'default',
 }: ReviewCardProps) {
+  const isOverlay = variant === 'overlay';
+
   const content = (
     <>
       <div className="flex items-center gap-3 mb-3">
         <Avatar name={author} src={authorAvatar} size="sm" />
         <div>
-          <p className="text-sm font-medium text-slate-900 dark:text-white">
+          <p className={cn(
+            'text-sm font-medium',
+            isOverlay ? 'text-white' : 'text-[#3C2415] dark:text-[#F5E6D3]',
+          )}>
             {author}
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{date}</p>
+          <p className={cn(
+            'text-xs',
+            isOverlay ? 'text-white/60' : 'text-[#3C2415]/50 dark:text-[#F5E6D3]/50',
+          )}>{date}</p>
         </div>
       </div>
       <Rating value={rating} className="mb-2" />
-      <h4 className="font-semibold text-slate-900 dark:text-white mb-1">
+      <h4 className={cn(
+        'font-semibold font-heading mb-1',
+        isOverlay ? 'text-white' : 'text-[#3C2415] dark:text-[#F5E6D3]',
+      )}>
         {title}
       </h4>
-      <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-3">
+      <p className={cn(
+        'text-sm line-clamp-3',
+        isOverlay ? 'text-white/80' : 'text-[#3C2415]/70 dark:text-[#F5E6D3]/70',
+      )}>
         {text}
       </p>
-      <div className="flex items-center gap-1.5 mt-3 text-xs text-slate-500 dark:text-slate-400">
+      <div className={cn(
+        'flex items-center gap-1.5 mt-3 text-xs',
+        isOverlay ? 'text-brand-300' : 'text-brand-500/60 dark:text-brand-400/60',
+      )}>
         <ThumbsUp className="h-3.5 w-3.5" />
         <span>{helpful} helpful</span>
       </div>
@@ -55,7 +74,10 @@ function ReviewCard({
   );
 
   const cardClasses = cn(
-    'rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800',
+    'rounded-xl p-5',
+    isOverlay
+      ? 'border border-white/10 bg-white/10 backdrop-blur-sm'
+      : 'border border-[#CDB499]/40 bg-[#FDF5E6]/80 dark:border-[#50301C]/40 dark:bg-[#2C1810]/80',
     className,
   );
 

@@ -34,16 +34,16 @@ function PlaceCard({
       <motion.div
         whileHover={{ y: -4 }}
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-elevation-1 hover:shadow-elevation-3 transition-shadow duration-300 dark:bg-slate-800 dark:border-slate-700"
+        className="rounded-xl border border-[#CDB499]/50 bg-[#FDF5E6] overflow-hidden shadow-elevation-1 hover:shadow-elevation-3 transition-shadow duration-300 dark:bg-[#2C1810] dark:border-[#50301C]"
       >
-        <div className="relative aspect-[4/3] bg-slate-100 dark:bg-slate-700 overflow-hidden">
+        <div className="relative aspect-[4/3] bg-safari-100 dark:bg-safari-900 overflow-hidden">
           <Image
             src={image}
             alt={title}
             width={600}
             height={400}
             unoptimized
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out vintage-sepia"
           />
           {category && (
             <Badge className="absolute top-3 left-3" variant="default">
@@ -52,17 +52,17 @@ function PlaceCard({
           )}
         </div>
         <div className="p-4">
-          <h3 className="font-semibold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors line-clamp-1">
+          <h3 className="font-semibold text-[#3C2415] dark:text-[#F5E6D3] group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors line-clamp-1">
             {title}
           </h3>
-          <div className="flex items-center gap-1 mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-1 mt-1 text-sm text-[#3C2415]/60 dark:text-[#F5E6D3]/60">
             <MapPin className="h-3.5 w-3.5" />
             <span className="line-clamp-1">{location}</span>
           </div>
           <div className="flex items-center justify-between mt-2">
             <Rating value={rating} />
             {price && (
-              <span className="text-sm font-semibold text-slate-900 dark:text-white">
+              <span className="text-sm font-semibold text-[#3C2415] dark:text-[#F5E6D3]">
                 {price}
               </span>
             )}

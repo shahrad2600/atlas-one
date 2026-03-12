@@ -41,14 +41,14 @@ function Rating({ value, count, interactive, onChange, className }: RatingProps)
                 'h-4 w-4 transition-colors duration-150',
                 isActive
                   ? 'fill-amber-400 text-amber-400'
-                  : 'fill-slate-200 text-slate-200 dark:fill-slate-600 dark:text-slate-600',
+                  : 'fill-safari-200 text-safari-200 dark:fill-safari-700 dark:text-safari-700',
               )}
             />
           </button>
         );
       })}
       {typeof count === 'number' && (
-        <span className="text-sm text-slate-500 dark:text-slate-400 ml-1">
+        <span className="text-sm text-[#3C2415]/60 dark:text-[#F5E6D3]/60 ml-1">
           ({count.toLocaleString()})
         </span>
       )}

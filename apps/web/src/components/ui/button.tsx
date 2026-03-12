@@ -6,13 +6,13 @@ import { cn } from '@/lib/utils';
 
 const variants = {
   default:
-    'bg-sky-600 text-white hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 focus-ring',
+    'bg-brand-500 text-white hover:bg-brand-600 dark:bg-brand-400 dark:hover:bg-brand-500 dark:text-[#1C1008] focus-ring',
   secondary:
-    'bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600 focus-ring',
+    'bg-safari-100 text-[#3C2415] hover:bg-safari-200 dark:bg-safari-800 dark:text-[#F5E6D3] dark:hover:bg-safari-700 focus-ring',
   outline:
-    'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 focus-ring',
+    'border border-[#CDB499] bg-[#FDF5E6] text-[#3C2415] hover:bg-brand-50 dark:border-[#50301C] dark:bg-[#2C1810] dark:text-[#F5E6D3] dark:hover:bg-safari-800 focus-ring',
   ghost:
-    'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 focus-ring',
+    'text-[#3C2415] hover:bg-safari-100 dark:text-[#F5E6D3] dark:hover:bg-safari-800 focus-ring',
   danger:
     'bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 focus-ring',
 };

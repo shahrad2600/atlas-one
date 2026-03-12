@@ -44,45 +44,48 @@ const staggerSlow = {
   show: { transition: { staggerChildren: 0.12 } },
 };
 
+/* ── Adventure Destinations ─────────────────────────── */
 const trendingDestinations = [
-  { id: 'paris', city: 'Paris', country: 'France', image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&q=80', reviews: 48210 },
-  { id: 'tokyo', city: 'Tokyo', country: 'Japan', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&q=80', reviews: 35890 },
-  { id: 'new-york', city: 'New York', country: 'United States', image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=600&q=80', reviews: 62450 },
-  { id: 'rome', city: 'Rome', country: 'Italy', image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600&q=80', reviews: 41320 },
-  { id: 'bali', city: 'Bali', country: 'Indonesia', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80', reviews: 28750 },
-  { id: 'barcelona', city: 'Barcelona', country: 'Spain', image: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=600&q=80', reviews: 37640 },
+  { id: 'serengeti', city: 'Serengeti', country: 'Tanzania', image: 'https://images.unsplash.com/photo-1516426122078-c23e76b9cefd?w=600&q=80', reviews: 28750 },
+  { id: 'marrakech', city: 'Marrakech', country: 'Morocco', image: 'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=600&q=80', reviews: 35890 },
+  { id: 'cairo', city: 'Cairo', country: 'Egypt', image: 'https://images.unsplash.com/photo-1572252009286-268acec5ca0a?w=600&q=80', reviews: 41320 },
+  { id: 'cape-town', city: 'Cape Town', country: 'South Africa', image: 'https://images.unsplash.com/photo-1580060839134-75a5edca2e99?w=600&q=80', reviews: 48210 },
+  { id: 'havana', city: 'Havana', country: 'Cuba', image: 'https://images.unsplash.com/photo-1500759285222-a95626b934cb?w=600&q=80', reviews: 22450 },
+  { id: 'rajasthan', city: 'Rajasthan', country: 'India', image: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=600&q=80', reviews: 37640 },
 ];
 
+/* ── Luxury Lodges & Retreats ────────────────────────── */
 const popularHotels = [
-  { title: 'The Ritz Paris', location: 'Paris, France', rating: 4.8, price: '$892/night', image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=80', href: '/hotels/ritz-paris' },
-  { title: 'Aman Tokyo', location: 'Tokyo, Japan', rating: 4.9, price: '$1,200/night', image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=600&q=80', href: '/hotels/aman-tokyo' },
-  { title: 'The Plaza', location: 'New York, USA', rating: 4.7, price: '$745/night', image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600&q=80', href: '/hotels/the-plaza' },
-  { title: 'Hotel de Russie', location: 'Rome, Italy', rating: 4.6, price: '$650/night', image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=600&q=80', href: '/hotels/hotel-de-russie' },
+  { title: 'Singita Grumeti', location: 'Serengeti, Tanzania', rating: 4.9, price: '$2,850/night', image: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=600&q=80', href: '/hotels/singita-grumeti' },
+  { title: 'Royal Mansour', location: 'Marrakech, Morocco', rating: 4.9, price: '$1,800/night', image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=600&q=80', href: '/hotels/royal-mansour' },
+  { title: 'Belmond Safari Lodge', location: 'Botswana', rating: 4.8, price: '$2,200/night', image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=80', href: '/hotels/belmond-safari' },
+  { title: 'Raffles Hotel', location: 'Singapore', rating: 4.7, price: '$950/night', image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600&q=80', href: '/hotels/raffles' },
 ];
 
+/* ── Traveler Tales ──────────────────────────────────── */
 const recentReviews = [
   {
-    author: 'Sarah Mitchell',
+    author: 'Victoria Ashworth',
     date: 'Feb 28, 2026',
     rating: 5,
-    title: 'Absolutely magical experience',
-    text: 'Our stay at The Ritz Paris was nothing short of extraordinary. From the moment we arrived, the staff treated us like royalty. The room was impeccable, the dining world-class, and the location unbeatable.',
+    title: 'A sunrise over the Serengeti',
+    text: 'Waking to the sound of lions in the distance, sipping champagne as the sun painted the savanna gold. Our guide spotted the Big Five in a single morning drive. Nothing compares.',
     helpful: 42,
   },
   {
-    author: 'James Chen',
+    author: 'James Harrington',
     date: 'Feb 25, 2026',
-    rating: 4,
-    title: 'Tokyo food tour was incredible',
-    text: 'The guided food tour through Tsukiji and Shibuya opened our eyes to flavors we never knew existed. Our guide Yuki was knowledgeable and passionate. Only wish it was longer!',
+    rating: 5,
+    title: 'Marrakech at golden hour',
+    text: 'The riads, the spice markets, the rooftop dinners under the stars. Our concierge arranged a private dinner in the Atlas Mountains that will stay with me forever.',
     helpful: 31,
   },
   {
-    author: 'Elena Rodriguez',
+    author: 'Elena Vasquez',
     date: 'Feb 22, 2026',
     rating: 5,
-    title: 'Best diving in Southeast Asia',
-    text: 'The coral reefs around Bali were breathtaking. Crystal clear water, incredible marine life, and professional dive instructors. We saw manta rays on our first dive! Absolutely unforgettable.',
+    title: 'Flying over the Okavango Delta',
+    text: 'A chartered bush plane, herds of elephants below, landing on a private airstrip. The lodge had butlers, champagne on ice, and the most extraordinary stargazing.',
     helpful: 56,
   },
 ];
@@ -90,31 +93,40 @@ const recentReviews = [
 export default function Home() {
   return (
     <main className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-sky-900 via-sky-800 to-indigo-900 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1920&q=80')] bg-cover bg-center opacity-15" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-sky-900/20 to-sky-900/60" />
-        <div className="relative max-w-6xl mx-auto px-4 py-28 sm:py-36">
+      {/* ═══════════════════════════════════════════════
+          HERO — Vintage Biplane over Golden Desert
+          ═══════════════════════════════════════════════ */}
+      <section className="relative text-white overflow-hidden">
+        {/* Background image — golden desert / vintage aviation */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1474302770737-173ee21bab63?w=1920&q=80')] bg-cover bg-center vintage-sepia" />
+        {/* Dark warm overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1C1008]/85 via-[#2C1810]/80 to-[#3F2E04]/75" />
+        {/* Bottom gradient for depth */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#1C1008]/60" />
+        {/* Vignette */}
+        <div className="absolute inset-0 vintage-vignette" />
+
+        <div className="relative z-10 max-w-6xl mx-auto px-4 py-28 sm:py-36">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] as const }}
             className="text-center mb-10"
           >
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 mb-6">
-              <Sparkles className="h-4 w-4 text-amber-300" />
-              <span className="text-sm font-medium text-sky-100">AI-powered travel platform</span>
+            <div className="inline-flex items-center gap-2 rounded-full bg-brand-500/20 backdrop-blur-sm border border-brand-400/30 px-4 py-1.5 mb-6">
+              <Sparkles className="h-4 w-4 text-brand-300" />
+              <span className="text-sm font-medium text-brand-200">AI-powered travel platform</span>
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight mb-5">
-              Discover Your Next
+            <h1 className="font-heading text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight mb-5">
+              Embark on Your Grand
               <br />
-              <span className="bg-gradient-to-r from-sky-200 via-white to-sky-200 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-brand-300 via-brand-200 to-brand-400 bg-clip-text text-transparent">
                 Adventure
               </span>
             </h1>
-            <p className="text-lg sm:text-xl text-sky-100/90 max-w-2xl mx-auto leading-relaxed">
-              Search hotels, flights, restaurants, and experiences across the globe.
-              Plan, book, and share your perfect trip with Atlas One.
+            <p className="text-lg sm:text-xl text-brand-100/90 max-w-2xl mx-auto leading-relaxed">
+              Journey to extraordinary destinations across the globe.
+              Luxury lodges, chartered flights, and unforgettable experiences — all in one place.
             </p>
           </motion.div>
           <motion.div
@@ -128,7 +140,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trending Destinations */}
+      {/* ═══════════════════════════════════════════════
+          ADVENTURE DESTINATIONS
+          ═══════════════════════════════════════════════ */}
       <section className="max-w-6xl mx-auto px-4 py-20">
         <motion.div
           variants={fadeUp}
@@ -138,15 +152,15 @@ export default function Home() {
           className="flex items-center justify-between mb-10"
         >
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <TrendingUp className="h-7 w-7 text-sky-600 dark:text-sky-400" />
-              Trending Destinations
+            <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#3C2415] dark:text-[#F5E6D3] flex items-center gap-2">
+              <TrendingUp className="h-7 w-7 text-brand-500 dark:text-brand-400" />
+              Adventure Destinations
             </h2>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Most popular places travelers are exploring right now</p>
+            <p className="text-[#3C2415]/60 dark:text-[#F5E6D3]/60 mt-1">Extraordinary places where legends are born</p>
           </div>
           <Link
             href="/destinations"
-            className="hidden sm:flex items-center gap-1 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 transition-colors"
+            className="hidden sm:flex items-center gap-1 text-sm font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
           >
             View all <ArrowRight className="h-4 w-4" />
           </Link>
@@ -168,16 +182,16 @@ export default function Home() {
                   src={dest.image}
                   alt={dest.city}
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500 vintage-sepia"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   unoptimized
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#1C1008]/80 via-[#1C1008]/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <h3 className="text-xl font-bold text-white">{dest.city}</h3>
+                  <h3 className="text-xl font-bold text-white font-heading">{dest.city}</h3>
                   <p className="text-sm text-white/80">{dest.country}</p>
-                  <div className="flex items-center gap-1 mt-1 text-xs text-white/70">
-                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                  <div className="flex items-center gap-1 mt-1 text-xs text-brand-300/90">
+                    <Star className="h-3 w-3 fill-brand-300 text-brand-300" />
                     <span>{dest.reviews.toLocaleString()} reviews</span>
                   </div>
                 </div>
@@ -187,9 +201,16 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Categories */}
-      <section className="bg-slate-50 dark:bg-slate-900/50 py-20">
-        <div className="max-w-6xl mx-auto px-4">
+      {/* ═══════════════════════════════════════════════
+          WAYS TO EXPLORE — Safari Background
+          ═══════════════════════════════════════════════ */}
+      <section className="relative py-20 overflow-hidden">
+        {/* Safari game drive background */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=1920&q=80')] bg-cover bg-center vintage-sepia" />
+        <div className="absolute inset-0 bg-[#1C1008]/65 dark:bg-[#1C1008]/80" />
+        <div className="absolute inset-0 vintage-vignette" />
+
+        <div className="relative z-10 max-w-6xl mx-auto px-4">
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -197,11 +218,11 @@ export default function Home() {
             viewport={{ once: true, margin: '-80px' }}
             className="text-center mb-12"
           >
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-3">
-              Explore by Category
+            <h2 className="font-heading text-2xl sm:text-3xl font-bold text-white mb-3">
+              Ways to Explore
             </h2>
-            <p className="text-slate-500 dark:text-slate-400">
-              Everything you need for the perfect trip, all in one place
+            <p className="text-brand-200/80">
+              Every great expedition begins with a single step
             </p>
           </motion.div>
           <motion.div
@@ -215,12 +236,12 @@ export default function Home() {
               <motion.div key={cat.key} variants={fadeUp}>
                 <Link
                   href={cat.href}
-                  className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:border-sky-200 dark:hover:border-sky-700 transition-all group hover:-translate-y-1 duration-300"
+                  className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#FDF5E6]/90 dark:bg-[#2C1810]/90 backdrop-blur-sm border border-brand-300/30 dark:border-brand-700/30 shadow-sm hover:shadow-lg hover:border-brand-400 dark:hover:border-brand-500 transition-all group hover:-translate-y-1 duration-300"
                 >
-                  <div className="text-slate-400 group-hover:text-sky-600 dark:text-slate-500 dark:group-hover:text-sky-400 transition-colors">
+                  <div className="text-brand-500/70 group-hover:text-brand-500 dark:text-brand-400/70 dark:group-hover:text-brand-400 transition-colors">
                     {iconMap[cat.icon]}
                   </div>
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                  <span className="text-sm font-medium text-[#3C2415] dark:text-[#F5E6D3] group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                     {cat.label}
                   </span>
                 </Link>
@@ -230,47 +251,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Popular Hotels */}
-      <section className="max-w-6xl mx-auto px-4 py-20">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-80px' }}
-          className="flex items-center justify-between mb-10"
-        >
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Popular Hotels</h2>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Top-rated accommodations loved by travelers</p>
-          </div>
-          <Link
-            href="/hotels"
-            className="hidden sm:flex items-center gap-1 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 transition-colors"
-          >
-            View all <ArrowRight className="h-4 w-4" />
-          </Link>
-        </motion.div>
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-80px' }}
-          className="flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory"
-        >
-          {popularHotels.map((hotel) => (
-            <motion.div key={hotel.title} variants={fadeUp} className="min-w-[280px] snap-start shrink-0">
-              <PlaceCard
-                {...hotel}
-                category="Hotel"
-              />
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-
-      {/* Recent Reviews */}
-      <section className="bg-slate-50 dark:bg-slate-900/50 py-20">
-        <div className="max-w-6xl mx-auto px-4">
+      {/* ═══════════════════════════════════════════════
+          LUXURY LODGES & RETREATS
+          ═══════════════════════════════════════════════ */}
+      <section className="bg-[#FAF0E6] dark:bg-[#1C1008]/50">
+        <div className="max-w-6xl mx-auto px-4 py-20">
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -279,12 +264,59 @@ export default function Home() {
             className="flex items-center justify-between mb-10"
           >
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Recent Reviews</h2>
-              <p className="text-slate-500 dark:text-slate-400 mt-1">See what other travelers are saying</p>
+              <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#3C2415] dark:text-[#F5E6D3]">Luxury Lodges &amp; Retreats</h2>
+              <p className="text-[#3C2415]/60 dark:text-[#F5E6D3]/60 mt-1">Where the wild meets the finest in hospitality</p>
+            </div>
+            <Link
+              href="/hotels"
+              className="hidden sm:flex items-center gap-1 text-sm font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
+            >
+              View all <ArrowRight className="h-4 w-4" />
+            </Link>
+          </motion.div>
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-80px' }}
+            className="flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory"
+          >
+            {popularHotels.map((hotel) => (
+              <motion.div key={hotel.title} variants={fadeUp} className="min-w-[280px] snap-start shrink-0">
+                <PlaceCard
+                  {...hotel}
+                  category="Lodge"
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          TRAVELER TALES — Campfire / Night Background
+          ═══════════════════════════════════════════════ */}
+      <section className="relative py-20 overflow-hidden">
+        {/* African campfire / night sky background */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1504432842672-1a79f78e4084?w=1920&q=80')] bg-cover bg-center vintage-sepia" />
+        <div className="absolute inset-0 bg-[#1C1008]/75 dark:bg-[#1C1008]/85" />
+        <div className="absolute inset-0 vintage-vignette" />
+
+        <div className="relative z-10 max-w-6xl mx-auto px-4">
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-80px' }}
+            className="flex items-center justify-between mb-10"
+          >
+            <div>
+              <h2 className="font-heading text-2xl sm:text-3xl font-bold text-white">Traveler Tales</h2>
+              <p className="text-brand-200/70 mt-1">Stories from extraordinary journeys</p>
             </div>
             <Link
               href="/reviews"
-              className="hidden sm:flex items-center gap-1 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 transition-colors"
+              className="hidden sm:flex items-center gap-1 text-sm font-medium text-brand-300 hover:text-brand-200 transition-colors"
             >
               View all <ArrowRight className="h-4 w-4" />
             </Link>
@@ -298,40 +330,41 @@ export default function Home() {
           >
             {recentReviews.map((review) => (
               <motion.div key={review.author} variants={fadeUp}>
-                <ReviewCard {...review} />
+                <ReviewCard {...review} variant="overlay" />
               </motion.div>
             ))}
           </motion.div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
-        className="bg-gradient-to-r from-sky-600 via-sky-600 to-indigo-600 dark:from-sky-700 dark:via-sky-800 dark:to-indigo-800 py-20"
-      >
-        <div className="max-w-4xl mx-auto px-4 text-center">
+      {/* ═══════════════════════════════════════════════
+          CTA — African Sunset Silhouette
+          ═══════════════════════════════════════════════ */}
+      <section className="relative py-24 overflow-hidden">
+        {/* African sunset with acacia tree silhouettes */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1534177616064-ef1d0b8d671a?w=1920&q=80')] bg-cover bg-center vintage-sepia" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1C1008]/80 via-[#2C1810]/70 to-[#3F2E04]/80" />
+        <div className="absolute inset-0 vintage-vignette" />
+
+        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-3xl sm:text-4xl font-bold text-white mb-4"
+            className="font-heading text-3xl sm:text-4xl font-bold text-white mb-4"
           >
-            Ready to Plan Your Trip?
+            Your Grand Expedition Awaits
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-sky-100 text-lg mb-8 max-w-2xl mx-auto"
+            className="text-brand-200 text-lg mb-8 max-w-2xl mx-auto"
           >
-            Create a personalized itinerary, book everything in one place,
-            and share your adventure with friends and family.
+            Craft a bespoke itinerary, reserve the finest lodges,
+            and embark on the adventure of a lifetime.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -341,14 +374,14 @@ export default function Home() {
           >
             <Link
               href="/trips"
-              className="inline-flex items-center gap-2 bg-white text-sky-700 font-semibold px-8 py-3.5 rounded-xl hover:bg-sky-50 transition-all text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 duration-300"
+              className="inline-flex items-center gap-2 bg-brand-500 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-brand-600 transition-all text-lg shadow-vintage border-2 border-brand-400/50 hover:-translate-y-0.5 duration-300"
             >
-              Plan Your Trip
+              Begin Your Journey
               <ArrowRight className="h-5 w-5" />
             </Link>
           </motion.div>
         </div>
-      </motion.section>
+      </section>
     </main>
   );
 }

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Twitter, Facebook, Instagram, Youtube } from 'lucide-react';
+import { Compass, Twitter, Facebook, Instagram, Youtube } from 'lucide-react';
 
 const columns = [
   {
@@ -53,13 +53,13 @@ const socials = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+    <footer className="border-t border-[#CDB499]/50 bg-[#F5E6D3] dark:border-[#50301C] dark:bg-[#1C1008]">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Column links */}
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {columns.map((col) => (
             <div key={col.title}>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#3C2415] dark:text-[#F5E6D3]">
                 {col.title}
               </h3>
               <ul className="mt-4 space-y-2">
@@ -67,7 +67,7 @@ export default function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+                      className="text-sm text-[#3C2415]/50 hover:text-brand-600 dark:text-[#F5E6D3]/50 dark:hover:text-brand-400 transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -79,10 +79,10 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-200 dark:border-slate-800 pt-8 sm:flex-row">
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-[#CDB499]/30 dark:border-[#50301C]/30 pt-8 sm:flex-row">
           <div className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-sky-500 dark:text-sky-400" />
-            <span className="font-bold text-slate-900 dark:text-white">
+            <Compass className="h-5 w-5 text-brand-500 dark:text-brand-400" />
+            <span className="font-bold text-[#3C2415] dark:text-[#F5E6D3] font-heading">
               Atlas One
             </span>
           </div>
@@ -95,20 +95,20 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={social.label}
-                className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+                className="text-[#3C2415]/40 hover:text-brand-500 dark:text-[#F5E6D3]/40 dark:hover:text-brand-400 transition-colors"
               >
                 <social.icon className="h-5 w-5" />
               </a>
             ))}
           </div>
 
-          <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-4 text-sm text-[#3C2415]/50 dark:text-[#F5E6D3]/50">
             <span>English (US)</span>
             <span>USD ($)</span>
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
+        <p className="mt-6 text-center text-xs text-[#3C2415]/40 dark:text-[#F5E6D3]/40">
           &copy; {new Date().getFullYear()} Atlas One. All rights reserved.
         </p>
       </div>

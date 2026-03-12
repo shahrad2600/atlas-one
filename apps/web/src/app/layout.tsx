@@ -51,8 +51,11 @@ export default function RootLayout({
                   padding: '12px 16px',
                   fontSize: '14px',
                   fontWeight: 500,
+                  background: '#FDF5E6',
+                  color: '#3C2415',
+                  border: '1px solid rgba(184, 134, 11, 0.2)',
                   boxShadow:
-                    '0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.04)',
+                    '0 10px 15px -3px rgb(60 36 21 / 0.08), 0 4px 6px -4px rgb(60 36 21 / 0.05)',
                 },
                 success: {
                   iconTheme: {
