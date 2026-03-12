@@ -102,13 +102,12 @@ export default function Home() {
           alt="Vintage luxury adventure travel — propeller plane over deserts, safari with champagne butler, African wildlife"
           fill
           priority
+          unoptimized
           className="object-cover"
           sizes="100vw"
         />
-        {/* Cinematic overlay — subtle darkening for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/70" />
-        {/* Subtle vignette */}
-        <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 250px rgba(0,0,0,0.25)' }} />
+        {/* Light overlay — just enough for text readability while letting the art shine */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/15 to-black/40" />
 
         <div className="relative z-10 max-w-5xl mx-auto px-4 py-32 sm:py-40 w-full">
           <motion.div
