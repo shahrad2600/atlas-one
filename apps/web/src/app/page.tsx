@@ -96,12 +96,19 @@ export default function Home() {
           HERO — Golden Desert Luxury
           ═══════════════════════════════════════════════ */}
       <section className="relative text-white overflow-hidden min-h-[85vh] flex items-center">
-        {/* Background — golden Sahara dunes */}
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1920&q=90')] bg-cover bg-center" />
-        {/* Cinematic overlay — warm golden tint at top, dark at bottom for readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#B8945F]/10 via-black/30 to-black/75" />
+        {/* Background — AI-generated vintage adventure panorama */}
+        <Image
+          src="/images/hero-adventure.png"
+          alt="Vintage luxury adventure travel — propeller plane over deserts, safari with champagne butler, African wildlife"
+          fill
+          priority
+          className="object-cover"
+          sizes="100vw"
+        />
+        {/* Cinematic overlay — subtle darkening for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/70" />
         {/* Subtle vignette */}
-        <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 250px rgba(0,0,0,0.3)' }} />
+        <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 250px rgba(0,0,0,0.25)' }} />
 
         <div className="relative z-10 max-w-5xl mx-auto px-4 py-32 sm:py-40 w-full">
           <motion.div
