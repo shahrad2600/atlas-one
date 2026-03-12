@@ -93,54 +93,41 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       {/* ═══════════════════════════════════════════════
-          HERO — Golden Desert Luxury
+          HERO — AI-Generated Vintage Adventure Art
           ═══════════════════════════════════════════════ */}
-      <section className="relative text-white overflow-hidden min-h-[85vh] flex items-center">
-        {/* Background — AI-generated vintage adventure panorama */}
-        <Image
-          src="/images/hero-adventure.png"
-          alt="Vintage luxury adventure travel — propeller plane over deserts, safari with champagne butler, African wildlife"
-          fill
-          priority
-          unoptimized
-          className="object-cover"
-          sizes="100vw"
-        />
-        {/* Light overlay — just enough for text readability while letting the art shine */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/15 to-black/40" />
+      <section className="relative overflow-hidden">
+        {/* Full-bleed AI-generated adventure panorama — the art IS the hero */}
+        <motion.div
+          initial={{ opacity: 0, scale: 1.02 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] as const }}
+          className="relative w-full"
+          style={{ aspectRatio: '1408 / 768' }}
+        >
+          <Image
+            src="/images/hero-adventure.png"
+            alt="Vintage luxury adventure travel — propeller plane over deserts, safari with champagne butler, African wildlife"
+            fill
+            priority
+            unoptimized
+            className="object-cover"
+            sizes="100vw"
+          />
+        </motion.div>
+      </section>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 py-32 sm:py-40 w-full">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] as const }}
-            className="text-center mb-12"
-          >
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 px-5 py-2 mb-8">
-              <Sparkles className="h-4 w-4 text-brand-300" />
-              <span className="text-sm tracking-wide text-white/90">AI-Powered Luxury Travel</span>
-            </div>
-            <h1 className="font-heading text-5xl sm:text-6xl lg:text-8xl font-bold tracking-tight mb-6 golden-glow leading-[1.1]">
-              The Art of
-              <br />
-              <span className="bg-gradient-to-r from-brand-200 via-brand-300 to-brand-200 bg-clip-text text-transparent">
-                Extraordinary Travel
-              </span>
-            </h1>
-            <div className="luxury-divider mb-6" />
-            <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed tracking-wide">
-              Private safaris, chartered flights, and the world&apos;s most exclusive destinations — curated for the discerning traveler.
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
-            className="max-w-4xl mx-auto"
-          >
-            <SearchBar />
-          </motion.div>
-        </div>
+      {/* ═══════════════════════════════════════════════
+          SEARCH — Floating search bar below hero
+          ═══════════════════════════════════════════════ */}
+      <section className="relative z-20 -mt-10 px-4 pb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] as const }}
+          className="max-w-4xl mx-auto"
+        >
+          <SearchBar />
+        </motion.div>
       </section>
 
       {/* ═══════════════════════════════════════════════
