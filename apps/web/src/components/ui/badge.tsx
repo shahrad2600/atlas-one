@@ -10,7 +10,7 @@ const variants = {
     'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
   danger: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
   outline:
-    'border border-[#CDB499] text-[#3C2415] bg-[#FDF5E6] dark:border-[#50301C] dark:text-[#F5E6D3] dark:bg-[#2C1810]',
+    'border border-[#EDE4D8] text-[#1C1108] bg-white dark:border-[#332C22] dark:text-[#F8F4ED] dark:bg-[#1A1610]',
   info: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
 };
 

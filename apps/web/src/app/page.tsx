@@ -94,17 +94,15 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       {/* ═══════════════════════════════════════════════
-          HERO — Vintage Biplane over Golden Desert
+          HERO — Golden Desert Adventure
           ═══════════════════════════════════════════════ */}
       <section className="relative text-white overflow-hidden">
-        {/* Background image — golden desert / vintage aviation */}
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1474302770737-173ee21bab63?w=1920&q=80')] bg-cover bg-center vintage-sepia" />
-        {/* Dark warm overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1C1008]/85 via-[#2C1810]/80 to-[#3F2E04]/75" />
-        {/* Bottom gradient for depth */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#1C1008]/60" />
-        {/* Vignette */}
-        <div className="absolute inset-0 vintage-vignette" />
+        {/* Background image — golden Sahara desert dunes */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1920&q=85')] bg-cover bg-center" />
+        {/* Warm golden-tinted overlay — NOT brown */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#C49A2F]/15 via-[#0D0A05]/35 to-[#0D0A05]/75" />
+        {/* Subtle vignette */}
+        <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 200px rgba(0,0,0,0.3)' }} />
 
         <div className="relative z-10 max-w-6xl mx-auto px-4 py-28 sm:py-36">
           <motion.div
@@ -113,18 +111,18 @@ export default function Home() {
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] as const }}
             className="text-center mb-10"
           >
-            <div className="inline-flex items-center gap-2 rounded-full bg-brand-500/20 backdrop-blur-sm border border-brand-400/30 px-4 py-1.5 mb-6">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 mb-6">
               <Sparkles className="h-4 w-4 text-brand-300" />
-              <span className="text-sm font-medium text-brand-200">AI-powered travel platform</span>
+              <span className="text-sm font-medium text-white/90">AI-powered travel platform</span>
             </div>
-            <h1 className="font-heading text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight mb-5">
+            <h1 className="font-heading text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight mb-5 golden-glow">
               Embark on Your Grand
               <br />
-              <span className="bg-gradient-to-r from-brand-300 via-brand-200 to-brand-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-brand-200 via-brand-300 to-brand-200 bg-clip-text text-transparent">
                 Adventure
               </span>
             </h1>
-            <p className="text-lg sm:text-xl text-brand-100/90 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl text-white/85 max-w-2xl mx-auto leading-relaxed">
               Journey to extraordinary destinations across the globe.
               Luxury lodges, chartered flights, and unforgettable experiences — all in one place.
             </p>
@@ -152,11 +150,11 @@ export default function Home() {
           className="flex items-center justify-between mb-10"
         >
           <div>
-            <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#3C2415] dark:text-[#F5E6D3] flex items-center gap-2">
+            <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#1C1108] dark:text-[#F8F4ED] flex items-center gap-2">
               <TrendingUp className="h-7 w-7 text-brand-500 dark:text-brand-400" />
               Adventure Destinations
             </h2>
-            <p className="text-[#3C2415]/60 dark:text-[#F5E6D3]/60 mt-1">Extraordinary places where legends are born</p>
+            <p className="text-[#1C1108]/60 dark:text-[#F8F4ED]/60 mt-1">Extraordinary places where legends are born</p>
           </div>
           <Link
             href="/destinations"
@@ -182,11 +180,11 @@ export default function Home() {
                   src={dest.image}
                   alt={dest.city}
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500 vintage-sepia"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   unoptimized
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1C1008]/80 via-[#1C1008]/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-5">
                   <h3 className="text-xl font-bold text-white font-heading">{dest.city}</h3>
                   <p className="text-sm text-white/80">{dest.country}</p>
@@ -202,13 +200,12 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════
-          WAYS TO EXPLORE — Safari Background
+          WAYS TO EXPLORE — Safari Landscape
           ═══════════════════════════════════════════════ */}
       <section className="relative py-20 overflow-hidden">
-        {/* Safari game drive background */}
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=1920&q=80')] bg-cover bg-center vintage-sepia" />
-        <div className="absolute inset-0 bg-[#1C1008]/65 dark:bg-[#1C1008]/80" />
-        <div className="absolute inset-0 vintage-vignette" />
+        {/* Safari game drive at golden hour */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=1920&q=85')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-black/50" />
 
         <div className="relative z-10 max-w-6xl mx-auto px-4">
           <motion.div
@@ -221,7 +218,7 @@ export default function Home() {
             <h2 className="font-heading text-2xl sm:text-3xl font-bold text-white mb-3">
               Ways to Explore
             </h2>
-            <p className="text-brand-200/80">
+            <p className="text-white/70">
               Every great expedition begins with a single step
             </p>
           </motion.div>
@@ -236,12 +233,12 @@ export default function Home() {
               <motion.div key={cat.key} variants={fadeUp}>
                 <Link
                   href={cat.href}
-                  className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#FDF5E6]/90 dark:bg-[#2C1810]/90 backdrop-blur-sm border border-brand-300/30 dark:border-brand-700/30 shadow-sm hover:shadow-lg hover:border-brand-400 dark:hover:border-brand-500 transition-all group hover:-translate-y-1 duration-300"
+                  className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-white/90 dark:bg-[#1A1610]/90 backdrop-blur-sm border border-white/20 dark:border-white/10 shadow-sm hover:shadow-lg hover:bg-white dark:hover:bg-[#1A1610] transition-all group hover:-translate-y-1 duration-300"
                 >
                   <div className="text-brand-500/70 group-hover:text-brand-500 dark:text-brand-400/70 dark:group-hover:text-brand-400 transition-colors">
                     {iconMap[cat.icon]}
                   </div>
-                  <span className="text-sm font-medium text-[#3C2415] dark:text-[#F5E6D3] group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                  <span className="text-sm font-medium text-[#1C1108] dark:text-[#F8F4ED] group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                     {cat.label}
                   </span>
                 </Link>
@@ -254,7 +251,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════
           LUXURY LODGES & RETREATS
           ═══════════════════════════════════════════════ */}
-      <section className="bg-[#FAF0E6] dark:bg-[#1C1008]/50">
+      <section className="bg-[#F9F5EE] dark:bg-[#0D0A05]/50">
         <div className="max-w-6xl mx-auto px-4 py-20">
           <motion.div
             variants={fadeUp}
@@ -264,8 +261,8 @@ export default function Home() {
             className="flex items-center justify-between mb-10"
           >
             <div>
-              <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#3C2415] dark:text-[#F5E6D3]">Luxury Lodges &amp; Retreats</h2>
-              <p className="text-[#3C2415]/60 dark:text-[#F5E6D3]/60 mt-1">Where the wild meets the finest in hospitality</p>
+              <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#1C1108] dark:text-[#F8F4ED]">Luxury Lodges &amp; Retreats</h2>
+              <p className="text-[#1C1108]/60 dark:text-[#F8F4ED]/60 mt-1">Where the wild meets the finest in hospitality</p>
             </div>
             <Link
               href="/hotels"
@@ -294,13 +291,12 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════
-          TRAVELER TALES — Campfire / Night Background
+          TRAVELER TALES — Sunset / Campfire
           ═══════════════════════════════════════════════ */}
       <section className="relative py-20 overflow-hidden">
-        {/* African campfire / night sky background */}
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1504432842672-1a79f78e4084?w=1920&q=80')] bg-cover bg-center vintage-sepia" />
-        <div className="absolute inset-0 bg-[#1C1008]/75 dark:bg-[#1C1008]/85" />
-        <div className="absolute inset-0 vintage-vignette" />
+        {/* African campfire / sunset background */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1504432842672-1a79f78e4084?w=1920&q=85')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
 
         <div className="relative z-10 max-w-6xl mx-auto px-4">
           <motion.div
@@ -312,7 +308,7 @@ export default function Home() {
           >
             <div>
               <h2 className="font-heading text-2xl sm:text-3xl font-bold text-white">Traveler Tales</h2>
-              <p className="text-brand-200/70 mt-1">Stories from extraordinary journeys</p>
+              <p className="text-white/60 mt-1">Stories from extraordinary journeys</p>
             </div>
             <Link
               href="/reviews"
@@ -342,9 +338,9 @@ export default function Home() {
           ═══════════════════════════════════════════════ */}
       <section className="relative py-24 overflow-hidden">
         {/* African sunset with acacia tree silhouettes */}
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1534177616064-ef1d0b8d671a?w=1920&q=80')] bg-cover bg-center vintage-sepia" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1C1008]/80 via-[#2C1810]/70 to-[#3F2E04]/80" />
-        <div className="absolute inset-0 vintage-vignette" />
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1534177616064-ef1d0b8d671a?w=1920&q=85')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/40 to-[#C49A2F]/15" />
+        <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 150px rgba(0,0,0,0.25)' }} />
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
           <motion.h2
@@ -352,7 +348,7 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="font-heading text-3xl sm:text-4xl font-bold text-white mb-4"
+            className="font-heading text-3xl sm:text-4xl font-bold text-white mb-4 golden-glow"
           >
             Your Grand Expedition Awaits
           </motion.h2>
@@ -361,7 +357,7 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-brand-200 text-lg mb-8 max-w-2xl mx-auto"
+            className="text-white/80 text-lg mb-8 max-w-2xl mx-auto"
           >
             Craft a bespoke itinerary, reserve the finest lodges,
             and embark on the adventure of a lifetime.
@@ -374,7 +370,7 @@ export default function Home() {
           >
             <Link
               href="/trips"
-              className="inline-flex items-center gap-2 bg-brand-500 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-brand-600 transition-all text-lg shadow-vintage border-2 border-brand-400/50 hover:-translate-y-0.5 duration-300"
+              className="inline-flex items-center gap-2 bg-brand-500 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-brand-400 transition-all text-lg shadow-golden border border-brand-400/50 hover:-translate-y-0.5 duration-300"
             >
               Begin Your Journey
               <ArrowRight className="h-5 w-5" />

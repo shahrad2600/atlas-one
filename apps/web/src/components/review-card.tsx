@@ -40,26 +40,26 @@ function ReviewCard({
         <div>
           <p className={cn(
             'text-sm font-medium',
-            isOverlay ? 'text-white' : 'text-[#3C2415] dark:text-[#F5E6D3]',
+            isOverlay ? 'text-white' : 'text-[#1C1108] dark:text-[#F8F4ED]',
           )}>
             {author}
           </p>
           <p className={cn(
             'text-xs',
-            isOverlay ? 'text-white/60' : 'text-[#3C2415]/50 dark:text-[#F5E6D3]/50',
+            isOverlay ? 'text-white/60' : 'text-[#1C1108]/50 dark:text-[#F8F4ED]/50',
           )}>{date}</p>
         </div>
       </div>
       <Rating value={rating} className="mb-2" />
       <h4 className={cn(
         'font-semibold font-heading mb-1',
-        isOverlay ? 'text-white' : 'text-[#3C2415] dark:text-[#F5E6D3]',
+        isOverlay ? 'text-white' : 'text-[#1C1108] dark:text-[#F8F4ED]',
       )}>
         {title}
       </h4>
       <p className={cn(
         'text-sm line-clamp-3',
-        isOverlay ? 'text-white/80' : 'text-[#3C2415]/70 dark:text-[#F5E6D3]/70',
+        isOverlay ? 'text-white/80' : 'text-[#1C1108]/70 dark:text-[#F8F4ED]/70',
       )}>
         {text}
       </p>
@@ -76,8 +76,8 @@ function ReviewCard({
   const cardClasses = cn(
     'rounded-xl p-5',
     isOverlay
-      ? 'border border-white/10 bg-white/10 backdrop-blur-sm'
-      : 'border border-[#CDB499]/40 bg-[#FDF5E6]/80 dark:border-[#50301C]/40 dark:bg-[#2C1810]/80',
+      ? 'border border-white/15 bg-white/10 backdrop-blur-md'
+      : 'border border-[#EDE4D8] bg-white dark:border-[#332C22] dark:bg-[#1A1610]',
     className,
   );
 

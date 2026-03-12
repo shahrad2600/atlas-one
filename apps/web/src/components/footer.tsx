@@ -53,13 +53,13 @@ const socials = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#CDB499]/50 bg-[#F5E6D3] dark:border-[#50301C] dark:bg-[#1C1008]">
+    <footer className="border-t border-[#EDE4D8] bg-[#F9F5EE] dark:border-[#332C22] dark:bg-[#0D0A05]">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Column links */}
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {columns.map((col) => (
             <div key={col.title}>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#3C2415] dark:text-[#F5E6D3]">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#1C1108] dark:text-[#F8F4ED]">
                 {col.title}
               </h3>
               <ul className="mt-4 space-y-2">
@@ -67,7 +67,7 @@ export default function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-[#3C2415]/50 hover:text-brand-600 dark:text-[#F5E6D3]/50 dark:hover:text-brand-400 transition-colors"
+                      className="text-sm text-[#1C1108]/50 hover:text-brand-600 dark:text-[#F8F4ED]/50 dark:hover:text-brand-400 transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -79,10 +79,10 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-[#CDB499]/30 dark:border-[#50301C]/30 pt-8 sm:flex-row">
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-[#EDE4D8]/50 dark:border-[#332C22]/50 pt-8 sm:flex-row">
           <div className="flex items-center gap-2">
             <Compass className="h-5 w-5 text-brand-500 dark:text-brand-400" />
-            <span className="font-bold text-[#3C2415] dark:text-[#F5E6D3] font-heading">
+            <span className="font-bold text-[#1C1108] dark:text-[#F8F4ED] font-heading">
               Atlas One
             </span>
           </div>
@@ -95,20 +95,20 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={social.label}
-                className="text-[#3C2415]/40 hover:text-brand-500 dark:text-[#F5E6D3]/40 dark:hover:text-brand-400 transition-colors"
+                className="text-[#1C1108]/40 hover:text-brand-500 dark:text-[#F8F4ED]/40 dark:hover:text-brand-400 transition-colors"
               >
                 <social.icon className="h-5 w-5" />
               </a>
             ))}
           </div>
 
-          <div className="flex items-center gap-4 text-sm text-[#3C2415]/50 dark:text-[#F5E6D3]/50">
+          <div className="flex items-center gap-4 text-sm text-[#1C1108]/50 dark:text-[#F8F4ED]/50">
             <span>English (US)</span>
             <span>USD ($)</span>
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs text-[#3C2415]/40 dark:text-[#F5E6D3]/40">
+        <p className="mt-6 text-center text-xs text-[#1C1108]/40 dark:text-[#F8F4ED]/40">
           &copy; {new Date().getFullYear()} Atlas One. All rights reserved.
         </p>
       </div>

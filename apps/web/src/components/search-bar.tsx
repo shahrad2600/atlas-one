@@ -22,9 +22,9 @@ function SearchBar({ className }: { className?: string }) {
       onSubmit={handleSubmit}
       className={cn(
         'flex flex-col sm:flex-row items-stretch sm:items-center gap-2',
-        'bg-[#FDF5E6]/95 dark:bg-[#2C1810]/95 backdrop-blur-lg',
-        'rounded-xl shadow-vintage p-2',
-        'border-2 border-brand-400/30 dark:border-brand-600/30',
+        'bg-white/95 dark:bg-[#1A1610]/95 backdrop-blur-lg',
+        'rounded-xl shadow-golden p-2',
+        'border border-brand-400/40 dark:border-brand-600/30',
         className,
       )}
     >
@@ -35,7 +35,7 @@ function SearchBar({ className }: { className?: string }) {
           placeholder="Where shall we take you?"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 bg-transparent text-[#3C2415] dark:text-[#F5E6D3] placeholder:text-[#3C2415]/40 dark:placeholder:text-[#F5E6D3]/40 focus:outline-none text-sm"
+          className="flex-1 bg-transparent text-[#1C1108] dark:text-[#F8F4ED] placeholder:text-[#1C1108]/40 dark:placeholder:text-[#F8F4ED]/40 focus:outline-none text-sm"
         />
       </div>
       <div className="hidden sm:block w-px h-8 bg-brand-300/30 dark:bg-brand-600/30" />
@@ -44,7 +44,7 @@ function SearchBar({ className }: { className?: string }) {
         <input
           type="text"
           placeholder="Depart - Return"
-          className="w-40 bg-transparent text-[#3C2415] dark:text-[#F5E6D3] placeholder:text-[#3C2415]/40 dark:placeholder:text-[#F5E6D3]/40 focus:outline-none text-sm"
+          className="w-40 bg-transparent text-[#1C1108] dark:text-[#F8F4ED] placeholder:text-[#1C1108]/40 dark:placeholder:text-[#F8F4ED]/40 focus:outline-none text-sm"
         />
       </div>
       <div className="hidden sm:block w-px h-8 bg-brand-300/30 dark:bg-brand-600/30" />
@@ -53,7 +53,7 @@ function SearchBar({ className }: { className?: string }) {
         <input
           type="text"
           placeholder="Travelers"
-          className="w-24 bg-transparent text-[#3C2415] dark:text-[#F5E6D3] placeholder:text-[#3C2415]/40 dark:placeholder:text-[#F5E6D3]/40 focus:outline-none text-sm"
+          className="w-24 bg-transparent text-[#1C1108] dark:text-[#F8F4ED] placeholder:text-[#1C1108]/40 dark:placeholder:text-[#F8F4ED]/40 focus:outline-none text-sm"
         />
       </div>
       <Button type="submit" size="lg" className="shrink-0 rounded-xl">

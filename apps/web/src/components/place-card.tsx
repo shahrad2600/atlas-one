@@ -34,7 +34,7 @@ function PlaceCard({
       <motion.div
         whileHover={{ y: -4 }}
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        className="rounded-xl border border-[#CDB499]/50 bg-[#FDF5E6] overflow-hidden shadow-elevation-1 hover:shadow-elevation-3 transition-shadow duration-300 dark:bg-[#2C1810] dark:border-[#50301C]"
+        className="rounded-xl border border-[#EDE4D8] bg-white overflow-hidden shadow-elevation-1 hover:shadow-elevation-3 transition-shadow duration-300 dark:bg-[#1A1610] dark:border-[#332C22]"
       >
         <div className="relative aspect-[4/3] bg-safari-100 dark:bg-safari-900 overflow-hidden">
           <Image
@@ -43,7 +43,7 @@ function PlaceCard({
             width={600}
             height={400}
             unoptimized
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out vintage-sepia"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
           />
           {category && (
             <Badge className="absolute top-3 left-3" variant="default">
@@ -52,17 +52,17 @@ function PlaceCard({
           )}
         </div>
         <div className="p-4">
-          <h3 className="font-semibold text-[#3C2415] dark:text-[#F5E6D3] group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors line-clamp-1">
+          <h3 className="font-semibold text-[#1C1108] dark:text-[#F8F4ED] group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors line-clamp-1">
             {title}
           </h3>
-          <div className="flex items-center gap-1 mt-1 text-sm text-[#3C2415]/60 dark:text-[#F5E6D3]/60">
+          <div className="flex items-center gap-1 mt-1 text-sm text-[#1C1108]/60 dark:text-[#F8F4ED]/60">
             <MapPin className="h-3.5 w-3.5" />
             <span className="line-clamp-1">{location}</span>
           </div>
           <div className="flex items-center justify-between mt-2">
             <Rating value={rating} />
             {price && (
-              <span className="text-sm font-semibold text-[#3C2415] dark:text-[#F5E6D3]">
+              <span className="text-sm font-semibold text-[#1C1108] dark:text-[#F8F4ED]">
                 {price}
               </span>
             )}

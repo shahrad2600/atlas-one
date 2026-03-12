@@ -5,21 +5,21 @@
 @tailwind utilities;
 
 :root {
-  --background: 253 245 230;
-  --foreground: 60 36 21;
-  --card: 245 230 211;
-  --border: 205 180 153;
-  --muted: 250 240 230;
-  --accent: 184 134 11;
+  --background: 255 252 247;
+  --foreground: 28 17 8;
+  --card: 255 255 255;
+  --border: 237 228 216;
+  --muted: 249 245 238;
+  --accent: 196 154 47;
 }
 
 .dark {
-  --background: 28 16 8;
-  --foreground: 245 230 211;
-  --card: 44 24 16;
-  --border: 80 48 28;
-  --muted: 44 24 16;
-  --accent: 212 168 67;
+  --background: 13 10 5;
+  --foreground: 248 244 237;
+  --card: 26 22 16;
+  --border: 51 44 34;
+  --muted: 32 28 20;
+  --accent: 228 184 77;
 }
 
 @layer base {
@@ -38,38 +38,38 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #F5E6D3;
+    background: #F5F0E9;
   }
 
   .dark ::-webkit-scrollbar-track {
-    background: #2C1810;
+    background: #1A1610;
   }
 
   ::-webkit-scrollbar-thumb {
     @apply rounded-full;
-    background: #CDB499;
+    background: #D4B88A;
   }
 
   .dark ::-webkit-scrollbar-thumb {
-    background: #6B4226;
+    background: #5A4A32;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #B8860B;
+    background: #C49A2F;
   }
 
   .dark ::-webkit-scrollbar-thumb:hover {
-    background: #8B6914;
+    background: #7A6340;
   }
 
   /* Firefox scrollbar */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #CDB499 #F5E6D3;
+    scrollbar-color: #D4B88A #F5F0E9;
   }
 
   .dark * {
-    scrollbar-color: #6B4226 #1C1008;
+    scrollbar-color: #5A4A32 #0D0A05;
   }
 }
 
@@ -78,42 +78,12 @@
     @apply focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:ring-offset-2 focus:ring-offset-[rgb(var(--background))];
   }
 
-  .vintage-sepia {
-    filter: sepia(20%) saturate(85%) brightness(95%) contrast(105%);
-  }
-
-  .vintage-overlay {
-    position: relative;
-  }
-
-  .vintage-overlay::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      135deg,
-      rgba(184, 134, 11, 0.08) 0%,
-      rgba(139, 69, 19, 0.05) 50%,
-      rgba(184, 134, 11, 0.1) 100%
-    );
-    pointer-events: none;
-  }
-
-  .vintage-vignette {
-    position: relative;
-  }
-
-  .vintage-vignette::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    box-shadow: inset 0 0 200px rgba(28, 16, 8, 0.4);
-    pointer-events: none;
-    z-index: 1;
-  }
-
   .font-heading {
     font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  }
+
+  .golden-glow {
+    text-shadow: 0 0 40px rgba(196, 154, 47, 0.3), 0 0 80px rgba(196, 154, 47, 0.15);
   }
 }
 

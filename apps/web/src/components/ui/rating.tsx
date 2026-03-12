@@ -48,7 +48,7 @@ function Rating({ value, count, interactive, onChange, className }: RatingProps)
         );
       })}
       {typeof count === 'number' && (
-        <span className="text-sm text-[#3C2415]/60 dark:text-[#F5E6D3]/60 ml-1">
+        <span className="text-sm text-[#1C1108]/60 dark:text-[#F8F4ED]/60 ml-1">
           ({count.toLocaleString()})
         </span>
       )}
