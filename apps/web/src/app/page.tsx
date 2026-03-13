@@ -95,61 +95,63 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════
           HERO — AI-Generated Adventure Art + Text Overlay
           ═══════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden">
-        {/* Background image */}
-        <motion.div
-          initial={{ opacity: 0, scale: 1.02 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] as const }}
-          className="relative w-full min-h-[60vh] sm:min-h-[70vh] lg:min-h-[80vh]"
-        >
-          <Image
-            src="/images/hero-adventure.png"
-            alt="Luxury adventure travel — propeller plane over deserts, safari with champagne butler, African wildlife"
-            fill
-            priority
-            unoptimized
-            className="object-cover"
-            sizes="100vw"
-          />
-          {/* Dark gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/60" />
+      <div className="relative">
+        <section className="relative overflow-hidden" style={{ height: 'calc(100vh - 64px)' }}>
+          {/* Background image */}
+          <motion.div
+            initial={{ opacity: 0, scale: 1.02 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] as const }}
+            className="relative w-full h-full"
+          >
+            <Image
+              src="/images/hero-adventure.png"
+              alt="Luxury adventure travel — propeller plane over deserts, safari with champagne butler, African wildlife"
+              fill
+              priority
+              unoptimized
+              className="object-cover"
+              sizes="100vw"
+            />
+            {/* Dark gradient overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/60" />
 
-          {/* Text content centered over the image */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10">
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 mb-6"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-brand-300" />
-              <span className="text-xs font-medium tracking-[0.15em] uppercase text-white/90">AI-Powered Luxury Travel</span>
-            </motion.div>
+            {/* Text content centered over the image */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10">
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 mb-6"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-brand-300" />
+                <span className="text-xs font-medium tracking-[0.15em] uppercase text-white/90">AI-Powered Luxury Travel</span>
+              </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
-              className="font-heading text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 tracking-wide"
-            >
-              The Art of<br />
-              <span className="text-brand-300">Extraordinary Travel</span>
-            </motion.h1>
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+                className="font-heading text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 tracking-wide"
+              >
+                The Art of<br />
+                <span className="text-brand-300">Extraordinary Travel</span>
+              </motion.h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.7 }}
-              className="text-base sm:text-lg text-white/80 max-w-xl mx-auto tracking-wide leading-relaxed"
-            >
-              Private safaris, chartered flights, and the world&apos;s most exclusive
-              destinations &mdash; curated for the discerning traveler.
-            </motion.p>
-          </div>
-        </motion.div>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.7 }}
+                className="text-base sm:text-lg text-white/80 max-w-xl mx-auto tracking-wide leading-relaxed"
+              >
+                Private safaris, chartered flights, and the world&apos;s most exclusive
+                destinations &mdash; curated for the discerning traveler.
+              </motion.p>
+            </div>
+          </motion.div>
+        </section>
 
-        {/* Search bar overlapping bottom of hero */}
+        {/* Search bar overlapping bottom of hero — outside overflow-hidden */}
         <div className="absolute bottom-0 left-0 right-0 z-20 translate-y-1/2 px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -160,10 +162,10 @@ export default function Home() {
             <SearchBar />
           </motion.div>
         </div>
-      </section>
+      </div>
 
       {/* Spacer for the search bar that overflows below the hero */}
-      <div className="h-10 sm:h-12" />
+      <div className="h-16 sm:h-20" />
 
       {/* ═══════════════════════════════════════════════
           CURATED DESTINATIONS
