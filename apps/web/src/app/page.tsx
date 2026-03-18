@@ -93,79 +93,49 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       {/* ═══════════════════════════════════════════════
-          HERO — AI-Generated Adventure Art + Text Overlay
+          HERO — Golden Desert Luxury
           ═══════════════════════════════════════════════ */}
-      <div className="relative">
-        <section className="relative overflow-hidden" style={{ height: 'calc(100vh - 64px)' }}>
-          {/* Background image */}
+      <section className="relative text-white overflow-hidden" style={{ height: 'calc(100vh - 64px)' }}>
+        {/* Background — golden desert rock formations */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1920&q=90')] bg-cover bg-center" />
+        {/* Cinematic overlay — warm golden tint at top, dark at bottom for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#B8945F]/10 via-black/30 to-black/75" />
+        {/* Subtle vignette */}
+        <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 250px rgba(0,0,0,0.3)' }} />
+
+        <div className="relative z-10 max-w-5xl mx-auto px-4 w-full h-full flex flex-col items-center justify-center">
           <motion.div
-            initial={{ opacity: 0, scale: 1.02 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] as const }}
-            className="relative w-full h-full"
-          >
-            <Image
-              src="/images/hero-adventure.png"
-              alt="Luxury adventure travel — propeller plane over deserts, safari with champagne butler, African wildlife"
-              fill
-              priority
-              unoptimized
-              className="object-cover"
-              sizes="100vw"
-            />
-            {/* Dark gradient overlay for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/60" />
-
-            {/* Text content centered over the image */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10">
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 mb-6"
-              >
-                <Sparkles className="h-3.5 w-3.5 text-brand-300" />
-                <span className="text-xs font-medium tracking-[0.15em] uppercase text-white/90">AI-Powered Luxury Travel</span>
-              </motion.div>
-
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.5 }}
-                className="font-heading text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 tracking-wide"
-              >
-                The Art of<br />
-                <span className="text-brand-300">Extraordinary Travel</span>
-              </motion.h1>
-
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.7 }}
-                className="text-base sm:text-lg text-white/80 max-w-xl mx-auto tracking-wide leading-relaxed"
-              >
-                Private safaris, chartered flights, and the world&apos;s most exclusive
-                destinations &mdash; curated for the discerning traveler.
-              </motion.p>
-            </div>
-          </motion.div>
-        </section>
-
-        {/* Search bar overlapping bottom of hero — outside overflow-hidden */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 translate-y-1/2 px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.9, ease: [0.22, 1, 0.36, 1] as const }}
-            className="max-w-4xl mx-auto"
+            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] as const }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 px-5 py-2 mb-8">
+              <Sparkles className="h-4 w-4 text-brand-300" />
+              <span className="text-sm tracking-wide text-white/90">AI-Powered Luxury Travel</span>
+            </div>
+            <h1 className="font-heading text-5xl sm:text-6xl lg:text-8xl font-bold tracking-tight mb-6 golden-glow leading-[1.1]">
+              The Art of
+              <br />
+              <span className="bg-gradient-to-r from-brand-200 via-brand-300 to-brand-200 bg-clip-text text-transparent">
+                Extraordinary Travel
+              </span>
+            </h1>
+            <div className="luxury-divider mb-6" />
+            <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed tracking-wide">
+              Private safaris, chartered flights, and the world&apos;s most exclusive destinations — curated for the discerning traveler.
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
+            className="max-w-4xl mx-auto w-full"
           >
             <SearchBar />
           </motion.div>
         </div>
-      </div>
-
-      {/* Spacer for the search bar that overflows below the hero */}
-      <div className="h-16 sm:h-20" />
+      </section>
 
       {/* ═══════════════════════════════════════════════
           CURATED DESTINATIONS
