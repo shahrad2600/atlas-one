@@ -105,6 +105,70 @@ export {
 } from './support-agent';
 
 // ---------------------------------------------------------------------------
+// Luxury Authority Sub-Agents
+// ---------------------------------------------------------------------------
+export {
+  EntityResolutionAgent,
+  type ChannelListing,
+  type CanonicalProperty,
+  type LinkedChannel,
+  type MatchResult,
+  type MatchFactor,
+  type ResolutionBatchResult,
+} from './entity-resolution-agent';
+
+export {
+  LuxuryTaxonomyAgent,
+  type LuxuryArchetype,
+  type TaxonomyClassification,
+  type ClassificationSignal,
+  type PropertyClassificationInput,
+} from './luxury-taxonomy-agent';
+
+export {
+  ReviewIntelligenceAgent,
+  type RawReview,
+  type LuxuryTruthLabel,
+  type AudienceFit,
+  type ServiceConsistency,
+  type PropertyIntelligence,
+  type LuxurySignal,
+} from './review-intelligence-agent';
+
+export {
+  RankingExplanationAgent,
+  type RankedPropertyForExplanation,
+  type DimensionalScores,
+  type RankingExplanation,
+  type ExplanationPoint,
+} from './ranking-explanation-agent';
+
+export {
+  TravelerMemoryAgent,
+  type TripMemory,
+  type BrandPreference,
+  type DislikedPattern,
+  type CelebrationSuggestion,
+  type PreferenceEvolution,
+  type TravelerMemory as TravelerMemoryState,
+  type BehavioralSignal,
+} from './traveler-memory-agent';
+
+export {
+  ConciergeAgent,
+  type PreArrivalRequest,
+  type PreArrivalCategory,
+  type RoomAssignment,
+  type AvailableRoom,
+  type GuestProfileForMatching,
+  type SpecialRequest,
+  type HandlingStep,
+  type DisruptionEvent,
+  type RecoveryPlan,
+  type EscalationRecord,
+} from './concierge-agent';
+
+// ---------------------------------------------------------------------------
 // Simplified Agent Interface (Chat Endpoint Layer)
 // ---------------------------------------------------------------------------
 export {

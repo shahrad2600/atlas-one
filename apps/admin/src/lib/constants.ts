@@ -63,6 +63,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { label: 'Advertising', href: '/advertising', icon: 'Megaphone' },
   { label: 'Special Offers', href: '/offers', icon: 'Tag' },
   { label: 'Review Express', href: '/review-express', icon: 'Mail' },
+  { label: 'Supplier Console', href: '/supplier', icon: 'Crown' },
   { label: 'Settings', href: '/settings', icon: 'Settings' },
 ];
 

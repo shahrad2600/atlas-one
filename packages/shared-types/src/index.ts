@@ -1,6 +1,9 @@
 // ─── AI Utilities ───────────────────────────────────────────────────
 export * from './ai.js';
 
+// ─── Luxury Authority ───────────────────────────────────────────────
+export * from './luxury-authority.js';
+
 // ─── Primitive Aliases ───────────────────────────────────────────────
 export type UUID = string;
 
